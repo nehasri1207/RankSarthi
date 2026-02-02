@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+
+<body style="display:flex; justify-content:center; align-items:center;">
+    <div class="glass-card" style="width: 100%; max-width: 400px; text-align: center; padding: 40px;">
+        <h2 style="margin-bottom: 20px;">Admin Login</h2>
+        <% if(error) { %>
+            <div style="color: var(--color-error); margin-bottom: 10px;">
+                <%= error %>
+            </div>
+            <% } %>
+                <form action="/admin/login" method="POST" autocomplete="off">
+                    <input type="password" name="password" placeholder="Enter Admin Password"
+                        autocomplete="new-password"
+                        style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+    </div>
+</body>
+
+</html>

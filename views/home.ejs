@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <style>
+        .category-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .cat-tab {
+            padding: 10px 25px;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--color-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            transition: all 0.3s;
+        }
+
+        .cat-tab.active {
+            background: var(--color-secondary);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .exam-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .exam-grid.active {
+            display: grid;
+        }
+
+        .exam-card-mini {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .exam-card-mini:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-color: var(--color-primary);
+        }
+
+        .exam-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--color-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-wrapper">
+        <%- include('partials/header') %>
+
+            <section class="hero-section">
+                <h1 class="hero-title">RankSaarthi – Rank Samajhne Ka Aapka Saathi</h1>
+                <p class="hero-subtitle">Apne specific exam ko select karein aur check karein apni rank.</p>
+            </section>
+
+            <!-- Tabbed Exam Selection -->
+            <div id="calculator-start" class="container">
+                <div class="glass-card" style="padding: 40px; min-height: 400px;">
+                    <h2 style="text-align: center; margin-bottom: 30px;">Choose Your Category</h2>
+
+                    <div class="category-tabs">
+                        <div class="cat-tab active" onclick="showCategory('SSC')">SSC</div>
+                        <div class="cat-tab" onclick="showCategory('Railway')">Railway</div>
+                        <div class="cat-tab" onclick="showCategory('Banking')">Banking</div>
+                    </div>
+
+                    <!-- SSC Exams -->
+                    <div id="SSC" class="exam-grid active">
+                        <% categorizedExams['SSC'].forEach(exam=> { %>
+                            <a href="/calculator?exam_id=<%= exam.id %>" class="exam-card-mini">
+                                <div class="exam-name">
+                                    <%= exam.name %>
+                                </div>
+                            </a>
+                            <% }); %>
+                                <% if(categorizedExams['SSC'].length===0) { %>
+                                    <p style="text-align:center; width:100%;">No exams found.</p>
+                                    <% } %>
+                    </div>
+
+                    <!-- Railway Exams -->
+                    <div id="Railway" class="exam-grid">
+                        <% categorizedExams['Railway'].forEach(exam=> { %>
+                            <a href="/calculator?exam_id=<%= exam.id %>" class="exam-card-mini">
+                                <div class="exam-name">
+                                    <%= exam.name %>
+                                </div>
+                            </a>
+                            <% }); %>
+                    </div>
+
+                    <!-- Banking Exams -->
+                    <div id="Banking" class="exam-grid">
+                        <% categorizedExams['Banking'].forEach(exam=> { %>
+                            <a href="/calculator?exam_id=<%= exam.id %>" class="exam-card-mini">
+                                <div class="exam-name">
+                                    <%= exam.name %>
+                                </div>
+                            </a>
+                            <% }); %>
+                    </div>
+
+                </div>
+            </div>
+
+            <section id="features" class="features-section container">
+                <h2 class="section-title">Why RankSaarthi?</h2>
+                <div class="features-grid">
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon"><ion-icon name="calculator-outline"></ion-icon></div>
+                        <h3 class="feature-title">Accurate Marking</h3>
+                        <p>Covers CGL, NTPC, Banking schemes perfectly.</p>
+                    </div>
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon"><ion-icon name="link-outline"></ion-icon></div>
+                        <h3 class="feature-title">URL Parsing</h3>
+                        <p>Paste your Digialm URL and get instant results.</p>
+                    </div>
+                    <div class="feature-card glass-card">
+                        <div class="feature-icon"><ion-icon name="language-outline"></ion-icon></div>
+                        <h3 class="feature-title">Simple Hinglish</h3>
+                        <p>Result analysis jo sabko samajh aaye.</p>
+                    </div>
+                </div>
+            </section>
+
+            <%- include('partials/footer') %>
+    </div>
+
+    <script>
+        function showCategory(catName) {
+            // Update Tabs
+            document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update Grids
+            document.querySelectorAll('.exam-grid').forEach(g => g.classList.remove('active'));
+            document.getElementById(catName).classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

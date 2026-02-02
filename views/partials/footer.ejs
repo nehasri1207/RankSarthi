@@ -1,0 +1,32 @@
+<footer class="main-footer">
+    <div class="footer-content">
+        <p>&copy; <%= new Date().getFullYear() %> RankSaarthi. <span class="hindi-text">Vidya dadati vinayam.</span></p>
+        <p class="disclaimer">Disclaimer: Rank predictions are estimates based on previous year data.</p>
+    </div>
+</footer>
+
+<script>
+    // Disable right-click
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Disable common inspection shortcuts
+    document.addEventListener('keydown', e => {
+        // F12
+        if (e.keyCode === 123) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && e.keyCode === 85) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    console.log("%cRankSaarthi: Security Enabled", "color: blue; font-size: 20px; font-weight: bold;");
+</script>

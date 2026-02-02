@@ -1,0 +1,211 @@
+/* Main Layout */
+.main-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+}
+
+/* Header */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px auto;
+    padding: 15px 30px;
+    width: 90%;
+    max-width: 1200px;
+    position: sticky;
+    top: 20px;
+    z-index: 1000;
+}
+
+.logo-text {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--color-secondary);
+}
+
+.logo-text .highlight {
+    color: var(--color-primary);
+}
+
+.nav-link {
+    margin-left: 20px;
+    font-weight: 500;
+    color: var(--color-secondary);
+    transition: color 0.2s;
+}
+
+.nav-link:hover {
+    color: var(--color-primary);
+}
+
+/* Hero Section */
+.hero-section {
+    text-align: center;
+    padding: 80px 20px 40px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero-title {
+    font-size: 3rem;
+    line-height: 1.2;
+    margin-bottom: 20px;
+    color: var(--color-secondary);
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    margin-bottom: 40px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cta-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: var(--radius-pill);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: var(--color-white);
+    box-shadow: 0 10px 20px -5px rgba(224, 122, 95, 0.5);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 25px -5px rgba(224, 122, 95, 0.6);
+}
+
+.btn-secondary {
+    background: var(--color-active-bg);
+    /* Use glass bg */
+    background: white;
+    color: var(--color-secondary);
+    border: 2px solid var(--color-secondary);
+}
+
+.btn-secondary:hover {
+    background: var(--color-secondary);
+    color: white;
+}
+
+/* Features Section (Why RankSaarthi) */
+.features-section {
+    padding: 60px 0;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 2rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    padding: 0 20px;
+}
+
+.feature-card {
+    text-align: center;
+    padding: 40px 20px;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: var(--color-primary);
+}
+
+.feature-title {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+}
+
+/* How It Works */
+.steps-section {
+    padding: 80px 0;
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.steps-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 20px;
+}
+
+.step-number {
+    background: var(--color-secondary);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.step-text h4 {
+    margin-bottom: 5px;
+}
+
+/* Footer */
+.main-footer {
+    text-align: center;
+    padding: 40px 20px;
+    margin-top: auto;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.2rem;
+    }
+
+    .main-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .nav-link {
+        margin: 0 10px;
+    }
+}

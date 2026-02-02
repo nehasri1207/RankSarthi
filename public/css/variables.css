@@ -1,0 +1,35 @@
+:root {
+  /* Color Palette */
+  --color-primary: #E07A5F;      /* Clay/Terracotta */
+  --color-primary-dark: #D35400;
+  --color-secondary: #3D5A80;    /* Deep Teal */
+  --color-secondary-light: #98C1D9;
+  --color-accent: #EE6C4D;
+  
+  --color-bg: #F4F1DE;           /* Warm/Paper Off-White */
+  --color-text-main: #293241;
+  --color-text-muted: #5E6C84;
+  --color-white: #FFFFFF;
+
+  --color-success: #27AE60;
+  --color-error: #E74C3C;
+  --color-warning: #F1C40F;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  --glass-blur: blur(12px);
+
+  /* Typography */
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Spacing & Radii */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 50px;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap');
