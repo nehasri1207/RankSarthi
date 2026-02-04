@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         .detail-header {
             display: flex;
@@ -289,44 +290,111 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% const maskData=(str, type)=> {
-                                    if (!str || str === 'N/A' || str === 'Manual User') return str;
-                                    if (str.length <= 2) return str; if (type==='name' ) { const parts=str.split(' ');
-                                        return parts.map(p => p[0] + ' *'.repeat(Math.max(0, p.length - 2)) +
-                                        (p.length> 1 ? p[p.length - 1] : '')).join(' ');
-                                        }
-                                        return str[0] + '*'.repeat(str.length - 2) + str[str.length - 1];
-                                        };
-                                        %>
-                                        <% studentResults.forEach((s, index)=> { %>
-                                            <tr>
-                                                <td>#<%= index + 1 %>
-                                                </td>
-                                                <td>
-                                                    <%= maskData(s.name, 'name' ) %>
-                                                </td>
-                                                <td>
-                                                    <%= maskData(s.roll_no, 'roll' ) %>
-                                                </td>
-                                                <td>
-                                                    <%= s.category %>
-                                                </td>
-                                                <td>
-                                                    <%= s.state %>
-                                                </td>
-                                                <td>
-                                                    <%= s.zone || 'N/A' %>
-                                                </td>
-                                                <td class="high-score">
-                                                    <%= s.total_score.toFixed(2) %>
-                                                </td>
-                                            </tr>
-                                            <% }) %>
+                                <% studentResults.forEach((s, index)=> { %>
+                                    <tr>
+                                        <td>#<%= index + 1 %>
+                                        </td>
+                                        <td>
+                                            <%= s.name %>
+                                        </td>
+                                        <td>
+                                            <% if (s.roll_no && s.roll_no !=='N/A' ) { %>
+                                                <a href="/admin/student/<%= s.id %>"
+                                                    style="color: var(--color-primary); font-weight: 700; text-decoration: none;">
+                                                    <%= s.roll_no %>
+                                                </a>
+                                                <% } else { %>
+                                                    <%= s.roll_no %>
+                                                        <% } %>
+                                        </td>
+                                        <td>
+                                            <%= s.category %>
+                                        </td>
+                                        <td>
+                                            <%= s.state %>
+                                        </td>
+                                        <td>
+                                            <%= s.zone || 'N/A' %>
+                                        </td>
+                                        <td class="high-score">
+                                            <%= s.total_score.toFixed(2) %>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Marks Distribution Table -->
+                    <div class="card">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2>📊 Marks Distribution (Category-wise)</h2>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="downloadDistributionImage()" class="btn btn-primary"
+                                    style="font-size: 0.9rem; padding: 8px 16px;">Download as JPG</button>
+                                <button onclick="window.print()" class="btn btn-secondary"
+                                    style="font-size: 0.9rem; padding: 8px 16px;">Download as PDF</button>
+                            </div>
+                        </div>
+
+                        <div id="marks-distribution-table" style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr
+                                        style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));">
+                                        <th style="color: white;">Marks (≥)</th>
+                                        <% categories.forEach(cat=> { %>
+                                            <th style="color: white;">
+                                                <%= cat %>
+                                            </th>
+                                            <% }) %>
+                                                <th style="color: white; background: rgba(0,0,0,0.2);">TOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% marksDistribution.forEach((row, index)=> { %>
+                                        <tr style="<%= index % 2 === 0 ? 'background: #f8f9fa;' : '' %>">
+                                            <td style="font-weight: 700; color: var(--color-primary);">
+                                                <%= row.score.toFixed(2) %>
+                                            </td>
+                                            <% categories.forEach(cat=> { %>
+                                                <td style="text-align: center;">
+                                                    <%= row[cat] || 0 %>
+                                                </td>
+                                                <% }) %>
+                                                    <td
+                                                        style="text-align: center; font-weight: 700; background: rgba(var(--color-primary-rgb), 0.1);">
+                                                        <%= row.TOTAL || 0 %>
+                                                    </td>
+                                        </tr>
+                                        <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p
+                            style="margin-top: 15px; font-size: 0.85rem; color: var(--color-text-muted); font-style: italic;">
+                            * This table shows cumulative count of students who scored greater than or equal to the
+                            specified marks.
+                        </p>
+                    </div>
         </div>
     </div>
+
+    <script>
+        async function downloadDistributionImage() {
+            const element = document.getElementById('marks-distribution-table');
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+            const link = document.createElement('a');
+            link.download = 'Marks-Distribution-<%= exam.name.replace(/\s+/g, ' - ') %>.jpg';
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        }
+    </script>
 </body>
 
 </html>

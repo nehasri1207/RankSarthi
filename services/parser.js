@@ -3,7 +3,11 @@ const cheerio = require('cheerio');
 
 async function parseDigialm(url) {
     try {
-        const response = await axios.get(url);
+        const response = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
         const html = response.data;
         const $ = cheerio.load(html);
 
@@ -55,10 +59,12 @@ async function parseDigialm(url) {
         let unattempted = 0;
 
         const sections = {};
+        const wrongQuestions = []; // NEW: Array to store wrong question details
 
         // Iterate over each question panel
         $('.question-pnl').each((i, el) => {
             totalQuestions++;
+            const questionNumber = totalQuestions;
 
             // Detect Section Name
             let sectionName = "General";
@@ -91,7 +97,16 @@ async function parseDigialm(url) {
 
             const chosenIndex = parseInt(chosenOptionText);
 
-            // 2. Locate the Option Element
+            // 2. Extract Question Text
+            let questionText = "";
+            const questionDiv = $(el).find('.question-txt, .ques-text, div').first();
+            if (questionDiv.length > 0) {
+                questionText = questionDiv.text().trim();
+                // Remove question number if present
+                questionText = questionText.replace(/^Q\.\s*\d+\s*[:\.]\s*/i, '').replace(/^Question\s*\d+\s*[:\.]\s*/i, '');
+            }
+
+            // 3. Locate the Option Elements and Extract Text
             let questionTable = $(el).find('table.questionRowTbl');
             if (questionTable.length === 0) {
                 questionTable = $(el).find('table').not('.menu-tbl').first();
@@ -117,23 +132,64 @@ async function parseDigialm(url) {
                 }
             }
 
-            if (optionRows.length >= chosenIndex) {
-                const chosenRow = optionRows[chosenIndex - 1];
-                const rowObj = $(chosenRow);
+            // Extract options text and find correct answer
+            const options = [];
+            let correctAnswer = null;
+            let isCorrect = false;
+
+            optionRows.forEach((row, idx) => {
+                const rowObj = $(row);
+                let optionText = rowObj.text().trim();
+                // Remove option number
+                optionText = optionText.replace(/^[1-4]\.\s*/, '');
+                optionText = optionText.replace(/✔/g, '').trim();
+
+                options.push(optionText);
+
+                // Check if this is the correct answer
                 const hasTick = rowObj.text().includes('✔');
                 const hasCorrectClass = rowObj.find('.correct, .rightAns').length > 0 || rowObj.hasClass('rightAns');
                 const hasCorrectImg = rowObj.find('img[alt="Correct"]').length > 0;
 
                 if (hasTick || hasCorrectClass || hasCorrectImg) {
+                    correctAnswer = idx + 1; // 1-indexed
+                    if (idx + 1 === chosenIndex) {
+                        isCorrect = true;
+                    }
+                }
+            });
+
+            if (optionRows.length >= chosenIndex) {
+                if (isCorrect) {
                     correct++;
                     sections[sectionName].correct++;
                 } else {
                     wrong++;
                     sections[sectionName].wrong++;
+
+                    // Store wrong question details
+                    wrongQuestions.push({
+                        questionNumber,
+                        section: sectionName,
+                        questionText: questionText || `Question ${questionNumber}`,
+                        options,
+                        correctAnswer,
+                        studentAnswer: chosenIndex
+                    });
                 }
             } else {
                 wrong++;
                 sections[sectionName].wrong++;
+
+                // Store as wrong question
+                wrongQuestions.push({
+                    questionNumber,
+                    section: sectionName,
+                    questionText: questionText || `Question ${questionNumber}`,
+                    options,
+                    correctAnswer,
+                    studentAnswer: chosenIndex
+                });
             }
         });
 
@@ -143,7 +199,8 @@ async function parseDigialm(url) {
             correct,
             wrong,
             unattempted,
-            sections
+            sections,
+            wrongQuestions // NEW: Include wrong questions data
         };
 
     } catch (error) {

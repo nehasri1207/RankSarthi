@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .student-profile {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        .profile-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: var(--shadow-md);
+            height: fit-content;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 auto 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f9f9f9;
+        }
+
+        .info-row label {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .info-row span {
+            font-weight: 600;
+            color: var(--color-secondary);
+        }
+
+        .sections-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: var(--shadow-md);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            color: var(--color-text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .score-badge {
+            background: var(--color-primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-wrapper">
+        <header class="main-header glass-card">
+            <div class="logo-container">Admin Student Portal</div>
+            <a href="/admin/dashboard" class="btn btn-secondary">Dashboard</a>
+        </header>
+
+        <div class="container">
+            <a href="/admin/exam/<%= student.exam_id %>" class="back-link">← Back to Exam Analysis</a>
+
+            <div class="student-profile">
+                <!-- Left: Quick Info -->
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <%= student.name ? student.name[0] : 'S' %>
+                        </div>
+                        <h2 style="margin-bottom: 5px;">
+                            <%= student.name %>
+                        </h2>
+                        <div class="score-badge">
+                            <%= student.total_score.toFixed(2) %>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <label>Roll Number</label>
+                        <span>
+                            <%= student.roll_no %>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <label>Category</label>
+                        <span>
+                            <%= student.category %>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <label>Exam</label>
+                        <span>
+                            <%= student.exam_name %>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <label>Shift</label>
+                        <span>
+                            <%= student.exam_date %> (<%= student.exam_shift %>)
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <label>State</label>
+                        <span>
+                            <%= student.state %>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <label>Zone</label>
+                        <span>
+                            <%= student.zone || 'N/A' %>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <label>Checked At</label>
+                        <span style="font-size: 0.8rem;">
+                            <%= new Date(student.created_at).toLocaleString() %>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Right: Answer Key Detail -->
+                <div class="sections-card">
+                    <h3 style="margin-bottom: 20px; border-left: 4px solid var(--color-primary); padding-left: 10px;">
+                        Answer Key Breakdown</h3>
+
+                    <% if (sections) { %>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Subject / Section</th>
+                                    <th>Correct</th>
+                                    <th>Wrong</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% Object.keys(sections).forEach(s=> {
+                                    const sec = sections[s];
+                                    const score = (sec.correct * student.marks_per_question) - (sec.wrong *
+                                    student.negative_marks);
+                                    %>
+                                    <tr>
+                                        <td><strong>
+                                                <%= s %>
+                                            </strong></td>
+                                        <td><span style="color: #2ecc71; font-weight: 700;">
+                                                <%= sec.correct %>
+                                            </span></td>
+                                        <td><span style="color: #e74c3c; font-weight: 700;">
+                                                <%= sec.wrong %>
+                                            </span></td>
+                                        <td style="font-weight: 700;">
+                                            <%= score.toFixed(2) %>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                        <% } else { %>
+                            <div style="text-align: center; padding: 40px; color: var(--color-text-muted);">
+                                <p>No detailed answer key data available for this student.</p>
+                                <p style="font-size: 0.8rem; margin-top: 10px;">This happens if the user manually
+                                    entered their score or if the data was recorded before this feature was enabled.</p>
+                            </div>
+                            <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

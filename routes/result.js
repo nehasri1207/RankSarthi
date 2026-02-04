@@ -3,8 +3,73 @@ const router = express.Router();
 const db = require('../database/db');
 
 router.get('/', (req, res) => {
-    const { exam_id, correct, wrong, category, gender, medium, horizontal_category, state, zone, info, sections: sectionsRaw } = req.query;
-    if (!exam_id || correct === undefined || wrong === undefined) return res.redirect('/');
+    let { exam_id, correct, wrong, category, gender, medium, horizontal_category, state, zone, info, sections: sectionsRaw, roll_no, wrongQuestions: wrongQuestionsRaw } = req.query;
+
+    if (!exam_id) return res.redirect('/');
+
+    // 1. If we have a roll_no but no scores, try to fetch from DB (Quick Check)
+    if (roll_no && (correct == null || wrong == null)) {
+        const student = db.prepare('SELECT * FROM user_results WHERE exam_id = ? AND roll_no = ?').get(exam_id, roll_no);
+
+        if (student) {
+            // Try to get correct/wrong from database
+            if (student.correct_count !== null && student.wrong_count !== null) {
+                correct = student.correct_count;
+                wrong = student.wrong_count;
+            } else if (student.sections_data) {
+                // Fallback: Calculate from sections_data if correct_count is missing
+                try {
+                    const sections = JSON.parse(student.sections_data);
+                    let c = 0, w = 0;
+                    sections.forEach(section => {
+                        c += section.correct || 0;
+                        w += section.wrong || 0;
+                    });
+                    correct = c;
+                    wrong = w;
+                    // Update the database with calculated values
+                    db.prepare('UPDATE user_results SET correct_count = ?, wrong_count = ? WHERE id = ?')
+                        .run(c, w, student.id);
+                } catch (e) {
+                    console.error('Failed to parse sections_data:', e);
+                }
+            }
+
+            if (correct !== null && wrong !== null) {
+                category = category || student.category;
+                gender = gender || student.gender;
+                medium = medium || student.medium;
+                horizontal_category = horizontal_category || student.horizontal_category;
+                state = state || student.state;
+                zone = zone || student.zone;
+
+                if (student.sections_data && !sectionsRaw) {
+                    try {
+                        const sectionsObj = JSON.parse(student.sections_data);
+                        sectionsRaw = Buffer.from(JSON.stringify(sectionsObj)).toString('base64');
+                    } catch (e) { }
+                }
+                if (student.extra_info && !info) {
+                    try {
+                        const infoObj = JSON.parse(student.extra_info);
+                        info = Buffer.from(JSON.stringify(infoObj)).toString('base64');
+                    } catch (e) { }
+                }
+                console.log(`Quick check successful for roll ${roll_no}: correct=${correct}, wrong=${wrong}`);
+            } else {
+                console.log(`Quick check failed: Cannot determine scores for roll ${roll_no}`);
+                return res.redirect('/');
+            }
+        } else {
+            console.log(`Quick check failed: Student not found for roll ${roll_no}, exam ${exam_id}`);
+            return res.redirect('/');
+        }
+    }
+
+    if (correct == null || wrong == null) {
+        console.log('Redirecting: correct or wrong is null');
+        return res.redirect('/');
+    }
 
     const exam = db.prepare('SELECT * FROM exams WHERE id = ?').get(exam_id);
     if (!exam) return res.redirect('/');
@@ -27,37 +92,45 @@ router.get('/', (req, res) => {
         try { candidateInfo = JSON.parse(Buffer.from(info, 'base64').toString('ascii')); } catch (e) { }
     }
 
+    let wrongQuestions = null;
+    if (wrongQuestionsRaw) {
+        try { wrongQuestions = JSON.parse(Buffer.from(wrongQuestionsRaw, 'base64').toString('ascii')); } catch (e) { }
+    }
+
     // --- REAL-TIME ANALYTICS & PERSISTENCE ---
     try {
         const rollNo = candidateInfo ? candidateInfo.rollNo : null;
         const name = candidateInfo ? candidateInfo.name : 'Anonymous Student';
         const shift = candidateInfo ? candidateInfo.time : 'Manual';
         const date = candidateInfo ? candidateInfo.date : 'Manual';
+        const sectionsData = sections ? JSON.stringify(sections) : null;
+        const extraInfo = candidateInfo ? JSON.stringify(candidateInfo) : null;
+        const wrongQuestionsData = wrongQuestions ? JSON.stringify(wrongQuestions) : null;
 
         if (rollNo && rollNo !== 'N/A') {
             // Parsed URL: Use Roll Number to Upsert (Avoid Duplicates)
             const existing = db.prepare('SELECT id FROM user_results WHERE roll_no = ? AND exam_id = ?').get(rollNo, exam_id);
             if (existing) {
-                db.prepare('UPDATE user_results SET total_score = ?, state = ?, zone = ?, category = ? WHERE id = ?').run(totalScore, state, zone, category, existing.id);
+                db.prepare('UPDATE user_results SET total_score = ?, state = ?, zone = ?, category = ?, sections_data = ?, extra_info = ?, correct_count = ?, wrong_count = ?, wrong_questions_data = ? WHERE id = ?').run(totalScore, state, zone, category, sectionsData, extraInfo, c, w, wrongQuestionsData, existing.id);
             } else {
                 db.prepare(`
                     INSERT INTO user_results 
-                    (exam_id, roll_no, name, category, gender, medium, horizontal_category, state, zone, exam_date, exam_shift, total_score)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (exam_id, roll_no, name, category, gender, medium, horizontal_category, state, zone, exam_date, exam_shift, total_score, sections_data, extra_info, correct_count, wrong_count, wrong_questions_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).run(
                     exam_id, rollNo, name, category, gender, medium, horizontal_category, state, zone,
-                    date, shift, totalScore
+                    date, shift, totalScore, sectionsData, extraInfo, c, w, wrongQuestionsData
                 );
             }
         } else {
             // Manual Entry: Save as new anonymous entry to update charts in real-time
             db.prepare(`
                 INSERT INTO user_results 
-                (exam_id, roll_no, name, category, gender, medium, horizontal_category, state, zone, exam_date, exam_shift, total_score)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (exam_id, roll_no, name, category, gender, medium, horizontal_category, state, zone, exam_date, exam_shift, total_score, sections_data, correct_count, wrong_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
                 exam_id, null, 'Manual User', category, gender, medium, horizontal_category, state, zone,
-                'Manual', 'Manual', totalScore
+                'Manual', 'Manual', totalScore, sectionsData, c, w
             );
         }
     } catch (err) {
@@ -114,21 +187,6 @@ router.get('/', (req, res) => {
             : { min_rank: 50000, max_rank: 100000, cutoff_probability: 'Low' };
     }
 
-    const maskData = (str, type) => {
-        if (!str || str === 'N/A' || str === 'Manual User') return str;
-        if (str.length <= 2) return str;
-        if (type === 'name') {
-            const parts = str.split(' ');
-            return parts.map(p => p[0] + '*'.repeat(Math.max(0, p.length - 2)) + (p.length > 1 ? p[p.length - 1] : '')).join(' ');
-        }
-        return str[0] + '*'.repeat(str.length - 2) + str[str.length - 1];
-    };
-
-    if (candidateInfo) {
-        candidateInfo.name = maskData(candidateInfo.name, 'name');
-        candidateInfo.rollNo = maskData(candidateInfo.rollNo, 'roll');
-    }
-
     res.render('result', {
         title: 'Result Analysis - RankSaarthi',
         exam,
@@ -141,8 +199,57 @@ router.get('/', (req, res) => {
             state,
             zone
         },
-        results: { totalScore, accuracy, prediction, sections, candidateInfo, analytics }
+        results: { totalScore, accuracy, prediction, sections, candidateInfo, analytics, wrongQuestions }
     });
+});
+
+// PDF Download Route
+router.get('/download-wrong-questions-pdf', async (req, res) => {
+    const { exam_id, roll_no } = req.query;
+
+    if (!exam_id || !roll_no) {
+        return res.status(400).send('Missing parameters');
+    }
+
+    try {
+        const { generateWrongQuestionsPDF } = require('../services/pdfGenerator');
+
+        // Fetch student data from database
+        const student = db.prepare(`
+            SELECT r.*, e.name as exam_name
+            FROM user_results r
+            JOIN exams e ON r.exam_id = e.id
+            WHERE r.exam_id = ? AND r.roll_no = ?
+        `).get(exam_id, roll_no);
+
+        if (!student || !student.wrong_questions_data) {
+            return res.status(404).send('No wrong questions data found');
+        }
+
+        const wrongQuestions = JSON.parse(student.wrong_questions_data);
+        const candidateInfo = student.extra_info ? JSON.parse(student.extra_info) : { name: student.name, rollNo: student.roll_no };
+
+        // Generate PDF
+        const { filepath, filename } = await generateWrongQuestionsPDF(wrongQuestions, candidateInfo, student.exam_name);
+
+        // Send PDF file
+        res.download(filepath, `Wrong-Questions-${student.exam_name.replace(/\s+/g, '-')}.pdf`, (err) => {
+            // Delete temp file after sending
+            if (err) {
+                console.error('Download error:', err);
+            }
+            try {
+                const fs = require('fs');
+                fs.unlinkSync(filepath);
+            } catch (e) {
+                console.error('Error deleting temp file:', e);
+            }
+        });
+
+    } catch (error) {
+        console.error('PDF Generation Error:', error);
+        res.status(500).send('Error generating PDF');
+    }
 });
 
 module.exports = router;

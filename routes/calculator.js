@@ -9,7 +9,11 @@ router.get('/', (req, res) => {
     if (!examId) return res.redirect('/');
     const exam = db.prepare('SELECT * FROM exams WHERE id = ?').get(examId);
     if (!exam) return res.status(404).render('404', { title: 'Exam Not Found' });
-    res.render('calculator', { title: `Calculate Marks - ${exam.name}`, exam: exam });
+    res.render('calculator', {
+        title: `Calculate Marks - ${exam.name}`,
+        exam: exam,
+        error: req.query.error
+    });
 });
 
 // POST /calculator/parse
@@ -23,6 +27,7 @@ router.post('/parse', async (req, res) => {
         // Base64 encode complex objects for URL compatibility
         const sectionsStr = Buffer.from(JSON.stringify(result.sections)).toString('base64');
         const infoStr = Buffer.from(JSON.stringify(result.candidateInfo)).toString('base64');
+        const wrongQuestionsStr = Buffer.from(JSON.stringify(result.wrongQuestions || [])).toString('base64');
 
         const params = new URLSearchParams({
             exam_id,
@@ -35,7 +40,8 @@ router.post('/parse', async (req, res) => {
             zone: zone || '',
             horizontal_category: horizontal_category || '',
             sections: sectionsStr,
-            info: infoStr
+            info: infoStr,
+            wrongQuestions: wrongQuestionsStr
         });
 
         res.redirect(`/result?${params.toString()}`);

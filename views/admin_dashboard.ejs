@@ -156,6 +156,12 @@
                         <h4 style="text-align: center; margin-bottom: 10px;">Participation Count per Category</h4>
                         <canvas id="participationChart"></canvas>
                     </div>
+                    <div
+                        style="background: white; padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); grid-column: 1 / -1;">
+                        <h4 style="text-align: center; margin-bottom: 10px;">Average Score by Shift (Toughness Analysis)
+                        </h4>
+                        <canvas id="shiftChart" height="100"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -374,9 +380,45 @@
         new Chart(document.getElementById('participationChart'), {
             type: 'bar',
             data: { labels: examNames, datasets: participationDatasets },
+        });
+
+        // --- SHIFT CHART ---
+        const shiftStatsData = <% - JSON.stringify(shiftStats) %>;
+
+        const shiftLabels = shiftStatsData.map(s => `${s.exam_date} ${s.exam_shift} (${s.exam_name})`);
+        const shiftScores = shiftStatsData.map(s => parseFloat(s.avg_score.toFixed(2)));
+        const shiftParticipants = shiftStatsData.map(s => s.count);
+
+        new Chart(document.getElementById('shiftChart'), {
+            type: 'bar',
+            data: {
+                labels: shiftLabels,
+                datasets: [{
+                    label: 'Average Score',
+                    data: shiftScores,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
             options: {
                 responsive: true,
-                scales: { y: { beginAtZero: true, title: { display: true, text: 'No. of Students' } } }
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Average Score' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function (context) {
+                                return `Participants: ${shiftParticipants[context.dataIndex]}`;
+                            }
+                        }
+                    }
+                }
             }
         });
 

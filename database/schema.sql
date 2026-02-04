@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS user_results (
     state TEXT,
     zone TEXT,
     total_score REAL,
+    sections_data TEXT,
+    extra_info TEXT,
+    correct_count INTEGER,
+    wrong_count INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(exam_id) REFERENCES exams(id),
     UNIQUE(exam_id, roll_no)

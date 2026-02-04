@@ -165,7 +165,7 @@ router.get('/exam/:id', requireAdmin, (req, res) => {
 
     // Recent student results for this exam
     const studentResults = db.prepare(`
-        SELECT name, roll_no, category, state, zone, total_score, created_at
+        SELECT id, name, roll_no, category, state, zone, total_score, created_at
         FROM user_results
         WHERE exam_id = ?
         ORDER BY total_score DESC
@@ -173,12 +173,40 @@ router.get('/exam/:id', requireAdmin, (req, res) => {
     `).all(examId);
 
     // Zone Analysis
-    // const zoneStats = db.prepare('SELECT zone, COUNT(*) as count, AVG(total_score) as avg_score, MAX(total_score) as topper_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone ORDER BY avg_score DESC').all(examId, '');
-    const zoneStats = [];
+    const zoneStats = db.prepare('SELECT zone, COUNT(*) as count, AVG(total_score) as avg_score, MAX(total_score) as topper_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone ORDER BY avg_score DESC').all(examId, '');
 
     // Category Wise Zone Analysis (Top 3 for each zone)
-    // const categoryZoneStats = db.prepare('SELECT zone, category, COUNT(*) as count, AVG(total_score) as avg_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone, category ORDER BY zone, avg_score DESC').all(examId, '');
-    const categoryZoneStats = [];
+    const categoryZoneStats = db.prepare('SELECT zone, category, COUNT(*) as count, AVG(total_score) as avg_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone, category ORDER BY zone, avg_score DESC').all(examId, '');
+
+    // Marks Distribution Table (5-mark intervals, category-wise)
+    const maxMarks = exam.total_marks;
+    const categories = ['GENERAL', 'EWS', 'OBC(NCL)', 'SC', 'ST'];
+    const marksDistribution = [];
+
+    // Generate score ranges from max to 0 with 5-mark intervals
+    for (let score = maxMarks; score >= 0; score -= 5) {
+        const row = { score };
+
+        // For each category, count students who scored >= this score
+        categories.forEach(category => {
+            const count = db.prepare(`
+                SELECT COUNT(*) as count 
+                FROM user_results 
+                WHERE exam_id = ? AND category = ? AND total_score >= ?
+            `).get(examId, category, score);
+            row[category] = count.count;
+        });
+
+        // Total across all categories
+        const total = db.prepare(`
+            SELECT COUNT(*) as count 
+            FROM user_results 
+            WHERE exam_id = ? AND total_score >= ?
+        `).get(examId, score);
+        row.TOTAL = total.count;
+
+        marksDistribution.push(row);
+    }
 
     res.render('admin_exam_detail', {
         title: `Analysis - ${exam.name}`,
@@ -187,7 +215,33 @@ router.get('/exam/:id', requireAdmin, (req, res) => {
         shiftStats,
         studentResults,
         zoneStats,
-        categoryZoneStats
+        categoryZoneStats,
+        marksDistribution,
+        categories
+    });
+});
+
+// Student Detail View
+router.get('/student/:id', requireAdmin, (req, res) => {
+    const studentId = req.params.id;
+    const student = db.prepare(`
+        SELECT r.*, e.name as exam_name, e.marks_per_question, e.negative_marks
+        FROM user_results r
+        JOIN exams e ON r.exam_id = e.id
+        WHERE r.id = ?
+    `).get(studentId);
+
+    if (!student) return res.redirect('/admin/dashboard');
+
+    let sections = null;
+    if (student.sections_data) {
+        try { sections = JSON.parse(student.sections_data); } catch (e) { }
+    }
+
+    res.render('admin_student_detail', {
+        title: `Student Detail - ${student.name}`,
+        student,
+        sections
     });
 });
 
