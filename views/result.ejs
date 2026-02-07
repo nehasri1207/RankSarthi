@@ -46,6 +46,25 @@
             color: var(--color-secondary);
         }
 
+        .tag {
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .tag-high {
+            background: var(--color-success);
+        }
+
+        .tag-medium {
+            background: var(--color-warning);
+        }
+
+        .tag-low {
+            background: var(--color-error);
+        }
+
         .stat-row {
             display: flex;
             justify-content: space-between;
@@ -138,6 +157,11 @@
             font-size: 0.9rem;
             font-weight: 700;
             margin-top: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
         }
 
         @media print {
@@ -265,12 +289,13 @@
 
                         <div class="dashboard-grid">
                             <div class="glass-card score-card">
-                                <p class="score-label">Total Marks</p>
+                                <p class="score-label">Raw Score</p>
                                 <div class="big-score">
                                     <%= results.totalScore %>
                                 </div>
-                                <p style="font-size: 0.9rem;">Out of <%= exam.total_questions * exam.marks_per_question
-                                        %>
+
+                                <p style="font-size: 0.9rem; margin-top: 10px;">Out of <%= exam.total_questions *
+                                        exam.marks_per_question %>
                                 </p>
                             </div>
 
@@ -279,10 +304,12 @@
                                 <div class="rank-range" style="margin: 20px 0;">
                                     <%= results.prediction.min_rank %> - <%= results.prediction.max_rank %>
                                 </div>
-                                <div class="tag"
-                                    style="background: <%= results.prediction.cutoff_probability === 'High' ? 'var(--color-success)' : (results.prediction.cutoff_probability === 'Medium' ? 'var(--color-warning)' : 'var(--color-error)') %>; color: white; padding: 5px 15px; border-radius: 20px;">
-                                    Cutoff Chance: <%= results.prediction.cutoff_probability %>
-                                </div>
+                                <% let tagClass='tag-low' ; if (results.prediction.cutoff_probability==='High' )
+                                    tagClass='tag-high' ; else if (results.prediction.cutoff_probability==='Medium' )
+                                    tagClass='tag-medium' ; %>
+                                    <div class="tag <%= tagClass %>">
+                                        Cutoff Chance: <%= results.prediction.cutoff_probability %>
+                                    </div>
                             </div>
 
                             <div class="glass-card score-card">
@@ -335,15 +362,59 @@
                                 </table>
                             </div>
                             <% } %>
+
+                                <% if (results.normalizedScore !==null) { %>
+                                    <div class="glass-card"
+                                        style="margin-top: 20px; text-align: center; border: 2px solid #e67e22; background: rgba(230, 126, 34, 0.05);">
+                                        <h3 style="color: #d35400; margin-bottom: 5px;">🌟 Normalized Score</h3>
+
+                                        <% if (results.zoneNormalizedScore !==null && results.zoneNormalizedScore
+                                            !==undefined) { %>
+                                            <!-- Dual Display for Railway (Overall | Zone) -->
+                                            <div
+                                                style="display: flex; justify-content: space-around; align-items: center; margin-top: 15px;">
+                                                <div>
+                                                    <p
+                                                        style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0;">
+                                                        Overall</p>
+                                                    <div class="big-score" style="font-size: 2.5rem; color: #e67e22;">
+                                                        <%= results.normalizedScore %>
+                                                    </div>
+                                                </div>
+                                                <div style="width: 1px; height: 50px; background: rgba(0,0,0,0.1);">
+                                                </div>
+                                                <div>
+                                                    <p
+                                                        style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0;">
+                                                        Zone Wise</p>
+                                                    <div class="big-score" style="font-size: 2.5rem; color: #27ae60;">
+                                                        <%= results.zoneNormalizedScore %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p
+                                                style="color: var(--color-text-muted); font-size: 0.8rem; margin-top: 10px;">
+                                                Calculated via Base Shift Interpolation
+                                            </p>
+                                            <% } else { %>
+                                                <!-- Standard Single Display -->
+                                                <div class="big-score" style="font-size: 3rem; color: #e67e22;">
+                                                    <%= results.normalizedScore %>
+                                                </div>
+                                                <p style="color: var(--color-text-muted); font-size: 0.9rem;">Calculated
+                                                    based on Shift Difficulty & Percentile Normalization</p>
+                                                <% } %>
+                                    </div>
+                                    <% } %>
             </div>
 
-            <div class="download-actions">
-                <button onclick="window.print()" class="btn btn-secondary">Download PDF</button>
-                <button onclick="downloadImage()" class="btn btn-primary">Save as Image</button>
+            <div class="download-actions" style="margin-top: 30px;">
+                <button onclick="window.print()" class="btn btn-secondary btn-small">Download PDF</button>
+                <button onclick="downloadImage()" class="btn btn-primary btn-small">Save as Image</button>
                 <% if (results.wrongQuestions && results.wrongQuestions.length> 0 && results.candidateInfo &&
                     results.candidateInfo.rollNo && results.candidateInfo.rollNo !== 'N/A') { %>
                     <a href="/result/download-wrong-questions-pdf?exam_id=<%= exam.id %>&roll_no=<%= results.candidateInfo.rollNo %>"
-                        class="btn"
+                        class="btn btn-small"
                         style="background: linear-gradient(135deg, #E63946, #F77F00); color: white; text-decoration: none; display: inline-block; font-weight: 700;">
                         📄 Know Your Wrong Questions (PDF)
                     </a>
@@ -351,9 +422,10 @@
             </div>
 
             <div
-                style="text-align: center; margin-bottom: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <a href="/calculator?exam_id=<%= exam.id %>" class="btn btn-primary">Check for Another Candidate</a>
-                <a href="/" class="btn btn-secondary">Go to Home Page</a>
+                style="text-align: center; margin-bottom: 40px; margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <a href="/calculator?exam_id=<%= exam.id %>" class="btn btn-primary btn-small">Check for Another
+                    Candidate</a>
+                <a href="/" class="btn btn-secondary btn-small">Go to Home Page</a>
             </div>
 
             <%- include('partials/footer') %>

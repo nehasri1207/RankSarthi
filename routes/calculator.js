@@ -19,10 +19,13 @@ router.get('/', (req, res) => {
 // POST /calculator/parse
 router.post('/parse', async (req, res) => {
     const { exam_id, url, category, gender, medium, horizontal_category, state, zone } = req.body;
+    console.log('Parse Request:', { exam_id, url }); // DEBUG log
+
     if (!url) return res.redirect(`/calculator?exam_id=${exam_id}`);
 
     try {
         const result = await parseDigialm(url);
+        console.log('Parser Result:', { correct: result.correct, wrong: result.wrong }); // DEBUG log
 
         // Base64 encode complex objects for URL compatibility
         const sectionsStr = Buffer.from(JSON.stringify(result.sections)).toString('base64');
@@ -46,7 +49,10 @@ router.post('/parse', async (req, res) => {
 
         res.redirect(`/result?${params.toString()}`);
     } catch (error) {
-        console.error(error);
+        console.error("===== PARSER ERROR =====");
+        console.error(`URL: ${url}`);
+        console.error(error.stack || error);
+        console.error("========================");
         res.redirect(`/calculator?exam_id=${exam_id}&error=inv_url`);
     }
 });

@@ -137,6 +137,18 @@ router.get('/', (req, res) => {
         console.error("Persistence Error:", err);
     }
 
+    // --- REAL-TIME NORMALIZATION TRIGGER ---
+    // If normalization is enabled for this exam, recalculate immediately so the student sees their normalized score.
+    if (exam.is_normalization_visible) {
+        try {
+            const { triggerRealTimeNormalization } = require('../services/normalization');
+            // triggers background throttled calculation
+            triggerRealTimeNormalization(exam_id);
+        } catch (normErr) {
+            console.error("Real-time Normalization Error:", normErr);
+        }
+    }
+
     // 2. Fetch Rankings (Based on all saved data)
     const overallCount = db.prepare('SELECT COUNT(*) as count FROM user_results WHERE exam_id = ?').get(exam_id).count;
     const overallRank = db.prepare('SELECT COUNT(*) as rank FROM user_results WHERE exam_id = ? AND total_score > ?').get(exam_id, totalScore).rank + 1;
@@ -187,6 +199,26 @@ router.get('/', (req, res) => {
             : { min_rank: 50000, max_rank: 100000, cutoff_probability: 'Low' };
     }
 
+    // --- FETCH NORMALIZED SCORE ---
+    let normalizedScore = null;
+    let zoneNormalizedScore = null;
+    // Check if feature is enabled for this exam
+    // exam object is already fetched above
+    if (exam.is_normalization_visible) { // Check visibility flag
+        const rNo = candidateInfo ? candidateInfo.rollNo : null;
+        if (rNo && rNo !== 'N/A') {
+            const studentRecord = db.prepare('SELECT normalized_score, zone_normalized_score FROM user_results WHERE roll_no = ? AND exam_id = ?').get(rNo, exam_id);
+            if (studentRecord) {
+                if (studentRecord.normalized_score != null) {
+                    normalizedScore = studentRecord.normalized_score;
+                }
+                if (studentRecord.zone_normalized_score != null) {
+                    zoneNormalizedScore = studentRecord.zone_normalized_score;
+                }
+            }
+        }
+    }
+
     res.render('result', {
         title: 'Result Analysis - RankSaarthi',
         exam,
@@ -199,7 +231,7 @@ router.get('/', (req, res) => {
             state,
             zone
         },
-        results: { totalScore, accuracy, prediction, sections, candidateInfo, analytics, wrongQuestions }
+        results: { totalScore, normalizedScore, zoneNormalizedScore, accuracy, prediction, sections, candidateInfo, analytics, wrongQuestions }
     });
 });
 

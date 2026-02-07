@@ -9,8 +9,7 @@
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/main.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         .admin-section {
             margin-bottom: 40px;
@@ -140,30 +139,7 @@
                 </div>
             </div>
 
-            <!-- Charts Section -->
-            <div class="glass-card admin-section" id="charts-area">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 style="color: var(--color-primary);">📈 Visual Analytics (Category-wise)</h3>
-                    <button onclick="downloadCharts()" class="btn btn-secondary"
-                        style="padding: 5px 15px; font-size: 0.8rem;">Download Charts as JPG</button>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
-                    <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm);">
-                        <h4 style="text-align: center; margin-bottom: 10px;">Average Marks per Category</h4>
-                        <canvas id="marksChart"></canvas>
-                    </div>
-                    <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm);">
-                        <h4 style="text-align: center; margin-bottom: 10px;">Participation Count per Category</h4>
-                        <canvas id="participationChart"></canvas>
-                    </div>
-                    <div
-                        style="background: white; padding: 15px; border-radius: 10px; box-shadow: var(--shadow-sm); grid-column: 1 / -1;">
-                        <h4 style="text-align: center; margin-bottom: 10px;">Average Score by Shift (Toughness Analysis)
-                        </h4>
-                        <canvas id="shiftChart" height="100"></canvas>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Analysis Section -->
             <div class="glass-card admin-section">
@@ -274,6 +250,7 @@
                             <th>Category</th>
                             <th>Total Q</th>
                             <th>Marks</th>
+                            <th>Action</th>
                         </tr>
                         <% exams.forEach(function(exam) { %>
                             <tr>
@@ -293,6 +270,17 @@
                                     <%= exam.total_questions %>
                                 </td>
                                 <td>+<%= exam.marks_per_question %> / -<%= exam.negative_marks %>
+                                </td>
+                                <td>
+                                    <form action="/admin/delete-exam" method="POST"
+                                        onsubmit="return confirm('Are you sure you want to delete this exam? All student data will be lost forever.');"
+                                        style="display:inline;">
+                                        <input type="hidden" name="exam_id" value="<%= exam.id %>">
+                                        <button type="submit"
+                                            style="background: none; border: none; cursor: pointer; color: #e74c3c; font-weight: bold;">
+                                            🗑️ Delete
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                             <% }); %>
@@ -328,6 +316,14 @@
         </div>
     </div>
 
+    <!-- Data Containers for JS -->
+    <script type="application/json" id="stats-data">
+        <%- JSON.stringify(examCategoryStats) %>
+    </script>
+    <script type="application/json" id="shift-stats-data">
+        <%- JSON.stringify(shiftStats) %>
+    </script>
+
     <script>
         function showPanel(id) {
             document.getElementById('exams-panel').style.display = id === 'exams' ? 'block' : 'none';
@@ -336,100 +332,14 @@
             if (event) event.target.classList.add('active');
         }
 
-        // --- CHART LOGIC ---
-        const stats = <% - JSON.stringify(examCategoryStats) %>;
-        const examNames = [...new Set(stats.map(s => s.exam_name))];
-        const categories = ["GENERAL", "OBC(NCL)", "EWS", "SC", "ST"];
-        const colors = {
-            'GENERAL': '#3d5a80',
-            'OBC(NCL)': '#ee6c4d',
-            'EWS': '#98c1d9',
-            'SC': '#293241',
-            'ST': '#e0fbfc'
-        };
+        // --- DATA INJECTION ---
+        const statsData = document.getElementById('stats-data').textContent;
+        const stats = JSON.parse(statsData);
 
-        const marksDatasets = categories.map(cat => ({
-            label: cat,
-            data: examNames.map(exam => {
-                const item = stats.find(s => s.exam_name === exam && s.category === cat);
-                return item ? parseFloat(item.avg_score.toFixed(2)) : 0;
-            }),
-            backgroundColor: colors[cat]
-        }));
+        const shiftStatsDataRaw = document.getElementById('shift-stats-data').textContent;
+        const shiftStatsData = JSON.parse(shiftStatsDataRaw);
 
-        const participationDatasets = categories.map(cat => ({
-            label: cat,
-            data: examNames.map(exam => {
-                const item = stats.find(s => s.exam_name === exam && s.category === cat);
-                return item ? item.count : 0;
-            }),
-            backgroundColor: colors[cat]
-        }));
 
-        // Marks Chart
-        new Chart(document.getElementById('marksChart'), {
-            type: 'bar',
-            data: { labels: examNames, datasets: marksDatasets },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true, title: { display: true, text: 'Average Marks' } } }
-            }
-        });
-
-        // Participation Chart
-        new Chart(document.getElementById('participationChart'), {
-            type: 'bar',
-            data: { labels: examNames, datasets: participationDatasets },
-        });
-
-        // --- SHIFT CHART ---
-        const shiftStatsData = <% - JSON.stringify(shiftStats) %>;
-
-        const shiftLabels = shiftStatsData.map(s => `${s.exam_date} ${s.exam_shift} (${s.exam_name})`);
-        const shiftScores = shiftStatsData.map(s => parseFloat(s.avg_score.toFixed(2)));
-        const shiftParticipants = shiftStatsData.map(s => s.count);
-
-        new Chart(document.getElementById('shiftChart'), {
-            type: 'bar',
-            data: {
-                labels: shiftLabels,
-                datasets: [{
-                    label: 'Average Score',
-                    data: shiftScores,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Average Score' }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            afterLabel: function (context) {
-                                return `Participants: ${shiftParticipants[context.dataIndex]}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        async function downloadCharts() {
-            const area = document.getElementById('charts-area');
-            const canvas = await html2canvas(area, { scale: 2 });
-            const link = document.createElement('a');
-            link.download = 'RankSaarthi-Analytics-Charts.jpg';
-            link.href = canvas.toDataURL('image/jpeg', 0.9);
-            link.click();
-        }
 
         // Auto-refresh every 60 seconds to keep data "Real-time"
         setTimeout(() => {

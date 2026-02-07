@@ -139,6 +139,25 @@
             letter-spacing: 1px;
             font-weight: 600;
         }
+
+        @media (max-width: 768px) {
+            .input-field {
+                padding: 10px;
+                /* Reduced from 15px */
+                font-size: 1rem;
+                /* Reduced from 1.1rem */
+            }
+
+            .input-group {
+                margin-bottom: 15px;
+                /* Reduced from 25px */
+            }
+
+            .calc-container {
+                margin: 20px auto;
+                padding: 0 15px;
+            }
+        }
     </style>
 </head>
 
@@ -502,7 +521,7 @@
             }
         }
 
-        const totalQs = <%= exam.total_questions %>;
+        const totalQs = parseInt('<%= exam.total_questions %>');
         const correctInput = document.getElementById('correct');
         const wrongInput = document.getElementById('wrong');
         const unattemptedDisplay = document.getElementById('unattemptedVal');

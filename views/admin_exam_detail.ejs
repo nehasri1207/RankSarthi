@@ -89,6 +89,10 @@
             color: #2ecc71;
             font-weight: 700;
         }
+
+        .stripe-row {
+            background: #f8f9fa;
+        }
     </style>
 </head>
 
@@ -107,277 +111,346 @@
                 </h2>
             </div>
 
-            <!-- Key Metrics -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h4>Total Participants</h4>
-                    <p>
-                        <%= categoryStats.reduce((acc, curr)=> acc + curr.count, 0) %>
-                    </p>
+            <% if (exam.category==='SSC' || exam.category==='Railway' ) { %>
+                <div style="margin-bottom: 20px;">
+                    <form action="/admin/toggle-normalization" method="POST" style="display: inline;">
+                        <input type="hidden" name="exam_id" value="<%= exam.id %>">
+                        <% if (exam.is_normalization_visible) { %>
+                            <input type="hidden" name="is_visible" value="0">
+                            <button type="submit" class="btn btn-primary"
+                                style="background-color: #c0392b; border-color: #e74c3c;">
+                                🚫 Disable Normalization View
+                            </button>
+                            <% } else { %>
+                                <input type="hidden" name="is_visible" value="1">
+                                <button type="submit" class="btn btn-primary"
+                                    style="background-color: #27ae60; border-color: #2ecc71;">
+                                    ✅ Enable & Calculate Normalization
+                                </button>
+                                <% } %>
+                    </form>
+                    <span style="margin-left: 10px; color: var(--color-text-muted); font-size: 0.9rem;">
+                        Status: <strong>
+                            <%= exam.is_normalization_visible ? 'Visible to Students' : 'Hidden from Students' %>
+                        </strong>
+                    </span>
                 </div>
-                <div class="stat-card">
-                    <h4>Average Score</h4>
-                    <p>
-                        <% const totalPart=categoryStats.reduce((acc, curr)=> acc + curr.count, 0);
-                            const weightedSum = categoryStats.reduce((acc, curr) => acc + (curr.avg_score * curr.count),
-                            0);
-                            const realAvg = totalPart > 0 ? (weightedSum / totalPart) : 0;
-                            %>
-                            <%= realAvg.toFixed(2) %>
-                    </p>
-                </div>
-                <div class="stat-card">
-                    <h4>Highest Score</h4>
-                    <p class="high-score">
-                        <%= Math.max(...categoryStats.map(s=> s.topper_score), 0).toFixed(2) %>
-                    </p>
-                </div>
-            </div>
+                <% } %>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                <!-- Category Breakdown -->
-                <div class="analysis-card">
-                    <h3 style="margin-bottom: 15px; border-left: 4px solid var(--color-accent); padding-left: 10px;">
-                        Category Breakdown</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th>Count</th>
-                                <th>Avg Score</th>
-                                <th>Topper</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% categoryStats.forEach(s=> { %>
-                                <tr>
-                                    <td><strong>
-                                            <%= s.category %>
-                                        </strong></td>
-                                    <td>
-                                        <%= s.count %>
-                                    </td>
-                                    <td>
-                                        <%= s.avg_score.toFixed(2) %>
-                                    </td>
-                                    <td class="high-score">
-                                        <%= s.topper_score.toFixed(2) %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Shift Breakdown -->
-                <div class="analysis-card">
-                    <h3 style="margin-bottom: 15px; border-left: 4px solid var(--color-secondary); padding-left: 10px;">
-                        Shift Analysis</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Shift</th>
-                                <th>Students</th>
-                                <th>Avg Score</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% shiftStats.forEach(s=> { %>
-                                <tr>
-                                    <td>
-                                        <%= s.exam_date %> (<%= s.exam_shift %>)
-                                    </td>
-                                    <td>
-                                        <%= s.count %>
-                                    </td>
-                                    <td style="font-weight: 700; color: var(--color-primary);">
-                                        <%= s.avg_score.toFixed(2) %>
-                                    </td>
-                                </tr>
-                                <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <% if (zoneStats.length> 0) { %>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                    <!-- Zone Breakdown -->
-                    <div class="analysis-card">
-                        <h3 style="margin-bottom: 15px; border-left: 4px solid #2ecc71; padding-left: 10px;">Zone
-                            Breakdown (Railway)</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>RRB Zone</th>
-                                    <th>Students</th>
-                                    <th>Avg Score</th>
-                                    <th>Topper</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% zoneStats.forEach(s=> { %>
-                                    <tr>
-                                        <td><strong>
-                                                <%= s.zone %>
-                                            </strong></td>
-                                        <td>
-                                            <%= s.count %>
-                                        </td>
-                                        <td>
-                                            <%= s.avg_score.toFixed(2) %>
-                                        </td>
-                                        <td class="high-score">
-                                            <%= s.topper_score.toFixed(2) %>
-                                        </td>
-                                    </tr>
-                                    <% }) %>
-                            </tbody>
-                        </table>
+                    <!-- Key Metrics -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>Total Participants</h4>
+                            <p>
+                                <%= categoryStats.reduce((acc, curr)=> acc + curr.count, 0) %>
+                            </p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Average Score</h4>
+                            <p>
+                                <% const totalPart=categoryStats.reduce((acc, curr)=> acc + curr.count, 0);
+                                    const weightedSum = categoryStats.reduce((acc, curr) => acc + (curr.avg_score *
+                                    curr.count),
+                                    0);
+                                    const realAvg = totalPart > 0 ? (weightedSum / totalPart) : 0;
+                                    %>
+                                    <%= realAvg.toFixed(2) %>
+                            </p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Highest Score</h4>
+                            <p class="high-score">
+                                <%= Math.max(...categoryStats.map(s=> s.topper_score), 0).toFixed(2) %>
+                            </p>
+                        </div>
                     </div>
 
-                    <!-- Category Wise Zone Analysis -->
-                    <div class="analysis-card">
-                        <h3 style="margin-bottom: 15px; border-left: 4px solid #f1c40f; padding-left: 10px;">Category
-                            Wise Zone Rank (Real-time)</h3>
-                        <div style="max-height: 400px; overflow-y: auto;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                        <!-- Category Breakdown -->
+                        <div class="analysis-card">
+                            <h3
+                                style="margin-bottom: 15px; border-left: 4px solid var(--color-accent); padding-left: 10px;">
+                                Category Breakdown</h3>
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Zone</th>
                                         <th>Category</th>
-                                        <th>Avg Score</th>
                                         <th>Count</th>
+                                        <th>Avg Score</th>
+                                        <th>Topper</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <% categoryZoneStats.forEach(s=> { %>
+                                    <% categoryStats.forEach(s=> { %>
                                         <tr>
-                                            <td>
-                                                <%= s.zone %>
-                                            </td>
                                             <td><strong>
                                                     <%= s.category %>
                                                 </strong></td>
                                             <td>
+                                                <%= s.count %>
+                                            </td>
+                                            <td>
                                                 <%= s.avg_score.toFixed(2) %>
+                                            </td>
+                                            <td class="high-score">
+                                                <%= s.topper_score.toFixed(2) %>
+                                            </td>
+                                        </tr>
+                                        <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Shift Breakdown -->
+                        <div class="analysis-card">
+                            <h3
+                                style="margin-bottom: 15px; border-left: 4px solid var(--color-secondary); padding-left: 10px;">
+                                Shift Analysis</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Shift</th>
+                                        <th>Students</th>
+                                        <th>Avg Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% shiftStats.forEach(s=> { %>
+                                        <tr>
+                                            <td>
+                                                <%= s.exam_date %> (<%= s.exam_shift %>)
                                             </td>
                                             <td>
                                                 <%= s.count %>
                                             </td>
+                                            <td style="font-weight: 700; color: var(--color-primary);">
+                                                <%= s.avg_score.toFixed(2) %>
+                                            </td>
                                         </tr>
                                         <% }) %>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </div>
-                <% } %>
 
-                    <!-- Student Data Table -->
-                    <div class="analysis-card">
-                        <h3 style="margin-bottom: 20px;">Top 100 Students</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Name</th>
-                                    <th>Roll No</th>
-                                    <th>Category</th>
-                                    <th>State</th>
-                                    <th>Zone</th>
-                                    <th>Score</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% studentResults.forEach((s, index)=> { %>
-                                    <tr>
-                                        <td>#<%= index + 1 %>
-                                        </td>
-                                        <td>
-                                            <%= s.name %>
-                                        </td>
-                                        <td>
-                                            <% if (s.roll_no && s.roll_no !=='N/A' ) { %>
-                                                <a href="/admin/student/<%= s.id %>"
-                                                    style="color: var(--color-primary); font-weight: 700; text-decoration: none;">
-                                                    <%= s.roll_no %>
-                                                </a>
-                                                <% } else { %>
-                                                    <%= s.roll_no %>
-                                                        <% } %>
-                                        </td>
-                                        <td>
-                                            <%= s.category %>
-                                        </td>
-                                        <td>
-                                            <%= s.state %>
-                                        </td>
-                                        <td>
-                                            <%= s.zone || 'N/A' %>
-                                        </td>
-                                        <td class="high-score">
-                                            <%= s.total_score.toFixed(2) %>
-                                        </td>
-                                    </tr>
-                                    <% }) %>
-                            </tbody>
-                        </table>
-                    </div>
+                    <% if (zoneStats.length> 0) { %>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <!-- Zone Breakdown -->
+                            <div class="analysis-card">
+                                <h3 style="margin-bottom: 15px; border-left: 4px solid #2ecc71; padding-left: 10px;">
+                                    Zone
+                                    Breakdown (Railway)</h3>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>RRB Zone</th>
+                                            <th>Students</th>
+                                            <th>Avg Score</th>
+                                            <th>Topper</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% zoneStats.forEach(s=> { %>
+                                            <tr>
+                                                <td><strong>
+                                                        <%= s.zone %>
+                                                    </strong></td>
+                                                <td>
+                                                    <%= s.count %>
+                                                </td>
+                                                <td>
+                                                    <%= s.avg_score.toFixed(2) %>
+                                                </td>
+                                                <td class="high-score">
+                                                    <%= s.topper_score.toFixed(2) %>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                    <!-- Marks Distribution Table -->
-                    <div class="card">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h2>📊 Marks Distribution (Category-wise)</h2>
-                            <div style="display: flex; gap: 10px;">
-                                <button onclick="downloadDistributionImage()" class="btn btn-primary"
-                                    style="font-size: 0.9rem; padding: 8px 16px;">Download as JPG</button>
-                                <button onclick="window.print()" class="btn btn-secondary"
-                                    style="font-size: 0.9rem; padding: 8px 16px;">Download as PDF</button>
+                            <!-- Category Wise Zone Analysis -->
+                            <div class="analysis-card">
+                                <h3 style="margin-bottom: 15px; border-left: 4px solid #f1c40f; padding-left: 10px;">
+                                    Category
+                                    Wise Zone Rank (Real-time)</h3>
+                                <div style="max-height: 400px; overflow-y: auto;">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Zone</th>
+                                                <th>Category</th>
+                                                <th>Avg Score</th>
+                                                <th>Count</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% categoryZoneStats.forEach(s=> { %>
+                                                <tr>
+                                                    <td>
+                                                        <%= s.zone %>
+                                                    </td>
+                                                    <td><strong>
+                                                            <%= s.category %>
+                                                        </strong></td>
+                                                    <td>
+                                                        <%= s.avg_score.toFixed(2) %>
+                                                    </td>
+                                                    <td>
+                                                        <%= s.count %>
+                                                    </td>
+                                                </tr>
+                                                <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
+                        <% } %>
 
-                        <div id="marks-distribution-table" style="overflow-x: auto;">
-                            <table class="data-table">
-                                <thead>
-                                    <tr
-                                        style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));">
-                                        <th style="color: white;">Marks (≥)</th>
-                                        <% categories.forEach(cat=> { %>
-                                            <th style="color: white;">
-                                                <%= cat %>
-                                            </th>
-                                            <% }) %>
-                                                <th style="color: white; background: rgba(0,0,0,0.2);">TOTAL</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% marksDistribution.forEach((row, index)=> { %>
-                                        <tr style="<%= index % 2 === 0 ? 'background: #f8f9fa;' : '' %>">
-                                            <td style="font-weight: 700; color: var(--color-primary);">
-                                                <%= row.score.toFixed(2) %>
-                                            </td>
-                                            <% categories.forEach(cat=> { %>
-                                                <td style="text-align: center;">
-                                                    <%= row[cat] || 0 %>
-                                                </td>
-                                                <% }) %>
-                                                    <td
-                                                        style="text-align: center; font-weight: 700; background: rgba(var(--color-primary-rgb), 0.1);">
-                                                        <%= row.TOTAL || 0 %>
-                                                    </td>
+                            <!-- Student Data Table -->
+                            <div class="analysis-card">
+                                <h3 style="margin-bottom: 20px;">Top 100 Students</h3>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Name</th>
+                                            <th>Roll No</th>
+                                            <th>Category</th>
+                                            <th>State</th>
+                                            <th>Zone</th>
+                                            <th>Score</th>
                                         </tr>
-                                        <% }) %>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p
-                            style="margin-top: 15px; font-size: 0.85rem; color: var(--color-text-muted); font-style: italic;">
-                            * This table shows cumulative count of students who scored greater than or equal to the
-                            specified marks.
-                        </p>
-                    </div>
+                                    </thead>
+                                    <tbody>
+                                        <% studentResults.forEach((s, index)=> { %>
+                                            <tr>
+                                                <td>#<%= index + 1 %>
+                                                </td>
+                                                <td>
+                                                    <%= s.name %>
+                                                </td>
+                                                <td>
+                                                    <% if (s.roll_no && s.roll_no !=='N/A' ) { %>
+                                                        <a href="/admin/student/<%= s.id %>"
+                                                            style="color: var(--color-primary); font-weight: 700; text-decoration: none;">
+                                                            <%= s.roll_no %>
+                                                        </a>
+                                                        <% } else { %>
+                                                            <%= s.roll_no %>
+                                                                <% } %>
+                                                </td>
+                                                <td>
+                                                    <%= s.category %>
+                                                </td>
+                                                <td>
+                                                    <%= s.state %>
+                                                </td>
+                                                <td>
+                                                    <%= s.zone || 'N/A' %>
+                                                </td>
+                                                <td class="high-score">
+                                                    <%= s.total_score.toFixed(2) %>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Marks Distribution Table -->
+                            <div class="card">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                    <h2>📊 Marks Distribution (Category-wise)</h2>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button onclick="downloadDistributionImage()" class="btn btn-primary"
+                                            style="font-size: 0.9rem; padding: 8px 16px;">Download as JPG</button>
+                                        <button onclick="window.print()" class="btn btn-secondary"
+                                            style="font-size: 0.9rem; padding: 8px 16px;">Download as PDF</button>
+                                    </div>
+                                </div>
+
+                                <!-- Total Candidates Summary -->
+                                <div
+                                    style="background: rgba(var(--color-primary-rgb), 0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--color-primary);">
+                                    <h4 style="margin-bottom: 10px; color: var(--color-primary); font-size: 0.95rem;">👥
+                                        Total Candidates Participation (Real-Time)</h4>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                                        <% let grandTotal=0; categories.forEach(cat=> {
+                                            const stat = categoryStats.find(s => s.category === cat);
+                                            const count = stat ? stat.count : 0;
+                                            grandTotal += count;
+                                            %>
+                                            <div
+                                                style="display: flex; flex-direction: column; align-items: center; min-width: 80px;">
+                                                <span
+                                                    style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 600;">
+                                                    <%= cat %>
+                                                </span>
+                                                <span
+                                                    style="font-size: 1.2rem; font-weight: 800; color: var(--color-secondary);">
+                                                    <%= count %>
+                                                </span>
+                                            </div>
+                                            <% }) %>
+                                                <div style="width: 1px; background: #ddd; margin: 0 10px;"></div>
+                                                <div
+                                                    style="display: flex; flex-direction: column; align-items: center; min-width: 80px;">
+                                                    <span
+                                                        style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 600;">TOTAL</span>
+                                                    <span
+                                                        style="font-size: 1.2rem; font-weight: 800; color: var(--color-primary);">
+                                                        <%= grandTotal %>
+                                                    </span>
+                                                </div>
+                                    </div>
+                                </div>
+
+                                <div id="marks-distribution-table" style="overflow-x: auto;">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr
+                                                style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));">
+                                                <th style="color: white;">Marks (≥)</th>
+                                                <% categories.forEach(cat=> { %>
+                                                    <th style="color: white;">
+                                                        <%= cat %>
+                                                    </th>
+                                                    <% }) %>
+                                                        <th style="color: white; background: rgba(0,0,0,0.2);">TOTAL
+                                                        </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% marksDistribution.forEach((row, index)=> { %>
+                                                <tr class="<%= index % 2 === 0 ? 'stripe-row' : '' %>">
+                                                    <td style="font-weight: 700; color: var(--color-primary);">
+                                                        <%= row.score.toFixed(2) %>
+                                                    </td>
+                                                    <% categories.forEach(cat=> { %>
+                                                        <td style="text-align: center;">
+                                                            <%= row[cat] || 0 %>
+                                                        </td>
+                                                        <% }) %>
+                                                            <td
+                                                                style="text-align: center; font-weight: 700; background: rgba(var(--color-primary-rgb), 0.1);">
+                                                                <%= row.TOTAL || 0 %>
+                                                            </td>
+                                                </tr>
+                                                <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p
+                                    style="margin-top: 15px; font-size: 0.85rem; color: var(--color-text-muted); font-style: italic;">
+                                    * This table shows cumulative count of students who scored greater than or equal to
+                                    the
+                                    specified marks.
+                                </p>
+                            </div>
         </div>
     </div>
 

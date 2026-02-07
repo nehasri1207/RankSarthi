@@ -137,7 +137,58 @@ router.post('/add-rank-data', requireAdmin, (req, res) => {
     } catch (err) {
         console.error(err);
     }
+});
+
+// Delete Exam
+router.post('/delete-exam', requireAdmin, (req, res) => {
+    const { exam_id } = req.body;
+    if (!exam_id) return res.redirect('/admin/dashboard');
+
+    try {
+        const deleteResults = db.prepare("DELETE FROM user_results WHERE exam_id = ?");
+        const deleteExam = db.prepare("DELETE FROM exams WHERE id = ?");
+
+        const transaction = db.transaction((id) => {
+            deleteResults.run(id);
+            deleteExam.run(id);
+        });
+
+        transaction(exam_id);
+    } catch (err) {
+        console.error("Delete Exam Error:", err);
+    }
     res.redirect('/admin/dashboard');
+});
+
+// Calculate Normalization
+const { calculateNormalization } = require('../services/normalization');
+router.post('/normalize-scores', requireAdmin, (req, res) => {
+    const { exam_id } = req.body;
+    try {
+        const result = calculateNormalization(exam_id);
+        // Optionally flash message
+    } catch (err) {
+        console.error("Normalization Error:", err);
+    }
+    res.redirect(`/admin/exam/${exam_id}`);
+});
+
+// Toggle Normalization Visibility
+router.post('/toggle-normalization', requireAdmin, (req, res) => {
+    const { exam_id, is_visible } = req.body;
+    try {
+        const val = parseInt(is_visible); // 1 or 0
+
+        // If Enabling, Calculate first!
+        if (val === 1) {
+            calculateNormalization(exam_id);
+        }
+
+        db.prepare('UPDATE exams SET is_normalization_visible = ? WHERE id = ?').run(val, exam_id);
+    } catch (err) {
+        console.error("Toggle Error:", err);
+    }
+    res.redirect(`/admin/exam/${exam_id}`);
 });
 
 // Detailed Exam Analysis
