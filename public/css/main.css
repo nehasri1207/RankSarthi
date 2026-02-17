@@ -21,15 +21,26 @@
     z-index: 1000;
 }
 
-.logo-text {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: var(--color-secondary);
+.logo-link {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    /* Add some breathing room */
 }
 
-.logo-text .highlight {
-    color: var(--color-primary);
+.logo-img {
+    height: 65px;
+    /* Slight increase */
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    /* Ensure it never squishes */
+    /* Drop shadow is now inside the SVG for better control, removing CSS filter to avoid double shadow */
+    transition: transform 0.3s ease;
+}
+
+.logo-img:hover {
+    transform: scale(1.05);
 }
 
 .nav-link {

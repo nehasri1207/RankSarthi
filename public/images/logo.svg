@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 80" preserveAspectRatio="xMinYMid meet">
+  <defs>
+    <!-- Soft shadow for minimal distraction but lift -->
+    <filter id="softShadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.5"/>
+      <feOffset dx="1" dy="1"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Icon: Abstract Compass - aligned left -->
+  <g transform="translate(10, 10)">
+    <!-- White fill circle to stand out on any bg -->
+    <circle cx="30" cy="30" r="28" fill="#ffffff" stroke="#E07A5F" stroke-width="4" />
+    <path d="M30 10 L36 28 L54 30 L36 36 L30 54 L24 36 L6 30 L24 28 Z" fill="#E07A5F" />
+    <path d="M30 5 L30 15 M30 45 L30 55 M5 30 L15 30 M45 30 L55 30" stroke="#3D5A80" stroke-width="3" stroke-linecap="round" />
+  </g>
+
+  <!-- Text: RankSaarthi -->
+  <!-- Removed stroke for cleaner edges. Increased spacing. Used Verdana for width/readability. -->
+  <text x="85" y="55" font-family="Verdana, Geneva, sans-serif" font-weight="bold" font-size="48" letter-spacing="0" filter="url(#softShadow)">
+    <tspan fill="#3D5A80">Rank</tspan><tspan fill="#E07A5F">Saarthi</tspan>
+  </text>
+</svg>
