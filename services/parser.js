@@ -13,11 +13,24 @@ async function parseDigialm(url) {
 async function parseSSC(url) {
     try {
         const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'max-age=0',
+            'Upgrade-Insecure-Requests': '1',
+            'Referer': 'https://sscexam.cbexams.com/', // Generic Referer
         };
 
         // 1. Fetch Part A
-        const responseA = await axios.get(url, { headers });
+        const responseA = await axios.get(url, { headers, withCredentials: true });
+
+        // Extract cookies
+        let cookies = [];
+        if (responseA.headers['set-cookie']) {
+            cookies = responseA.headers['set-cookie'];
+        }
+        const cookieHeader = cookies.join('; ');
+
         let htmlContent = responseA.data;
         let $ = cheerio.load(htmlContent);
 
@@ -51,8 +64,12 @@ async function parseSSC(url) {
                         const responsePart = await axios.post(url, qs.stringify(formData), {
                             headers: {
                                 ...headers,
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'Cookie': cookieHeader,
+                                'Origin': 'https://sscexam.cbexams.com',
+                                'Referer': url
+                            },
+                            maxRedirects: 5
                         });
 
                         htmlContent += "\n<!-- SECTION BREAK -->\n" + responsePart.data;
@@ -69,7 +86,11 @@ async function parseSSC(url) {
         return extractSSCQuestions($, candidateInfo);
 
     } catch (error) {
-        console.error('SSC Parser Error:', error);
+        if (error.response) {
+            console.error(`SSC Parser Error: Status ${error.response.status}`, error.response.statusText);
+        } else {
+            console.error('SSC Parser Error:', error.message);
+        }
         throw new Error('Failed to parse SSC URL');
     }
 }
@@ -304,7 +325,10 @@ async function parseStandardDigialm(url) {
     try {
         const response = await axios.get(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Upgrade-Insecure-Requests': '1'
             }
         });
         const html = response.data;

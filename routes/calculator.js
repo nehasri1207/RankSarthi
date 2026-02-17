@@ -51,7 +51,11 @@ router.post('/parse', async (req, res) => {
     } catch (error) {
         console.error("===== PARSER ERROR =====");
         console.error(`URL: ${url}`);
-        console.error(error.stack || error);
+        if (error.response) {
+            console.error(`Parser Response Error: ${error.response.status} - ${error.response.statusText}`);
+            // console.error(error.response.data); // Uncomment for verbose HTML error body
+        }
+        console.error(error.stack || error.message);
         console.error("========================");
         res.redirect(`/calculator?exam_id=${exam_id}&error=inv_url`);
     }
