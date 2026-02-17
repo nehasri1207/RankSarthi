@@ -2,16 +2,21 @@ const express = require('express');
 const path = require('path');
 const compression = require('compression');
 const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Simplified Session
+// Persistent Session with SQLite
 app.use(session({
+    store: new SQLiteStore({ db: 'sessions.db', dir: './database' }),
     secret: 'ranksaarthi-simple-secret',
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } // Set to true if using HTTPS
+    saveUninitialized: false, // Better for compliance
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // true in production
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
+    }
 }));
 
 // Basic Middleware
