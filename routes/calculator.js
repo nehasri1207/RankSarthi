@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
-const { parseDigialm } = require('../services/parser');
+const { parseDigialm, parseHtmlContent } = require('../services/parser');
 
 // GET /calculator?exam_id=1
 router.get('/', (req, res) => {
@@ -18,13 +18,21 @@ router.get('/', (req, res) => {
 
 // POST /calculator/parse
 router.post('/parse', async (req, res) => {
-    const { exam_id, url, category, gender, medium, horizontal_category, state, zone } = req.body;
-    console.log('Parse Request:', { exam_id, url }); // DEBUG log
+    const { exam_id, url, html_content, category, gender, medium, horizontal_category, state, zone } = req.body;
+    console.log('Parse Request:', { exam_id, hasUrl: !!url, hasHtml: !!html_content }); // DEBUG log
 
-    if (!url) return res.redirect(`/calculator?exam_id=${exam_id}`);
+    if (!url && !html_content) return res.redirect(`/calculator?exam_id=${exam_id}`);
 
     try {
-        const result = await parseDigialm(url);
+        let result;
+        if (html_content) {
+            console.log("Parsing raw HTML content...");
+            result = await parseHtmlContent(html_content);
+        } else {
+            console.log(`Fetching from URL: ${url}`);
+            result = await parseDigialm(url);
+        }
+
         console.log('Parser Result:', { correct: result.correct, wrong: result.wrong }); // DEBUG log
 
         // Base64 encode complex objects for URL compatibility
