@@ -102,6 +102,10 @@ CREATE TABLE IF NOT EXISTS form_updates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     url TEXT NOT NULL,
-    category TEXT CHECK(category IN ('Result', 'Admit Card', 'Latest Jobs')) NOT NULL,
+    category TEXT CHECK(category IN ('Result', 'Admit Card', 'Latest Jobs', 'Answer Key', 'Admission', 'Syllabus')) NOT NULL,
+    department TEXT,
+    last_date DATE,
+    is_trending BOOLEAN DEFAULT 0,
+    description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

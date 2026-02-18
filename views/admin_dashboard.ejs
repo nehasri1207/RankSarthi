@@ -317,17 +317,41 @@
                 <div id="forms-panel" style="display:none;">
                     <form action="/admin/add-form" method="POST" style="margin-top: 20px;">
                         <div class="form-grid">
-                            <input type="text" name="title" placeholder="Link Title (e.g. SSC CGL Result)" required
+                            <input type="text" name="title" placeholder="Job Title (e.g. SSC CGL 2024)" required
                                 style="padding: 8px;" class="full-width">
+
                             <input type="url" name="url" placeholder="URL (e.g. https://ssc.nic.in)" required
                                 style="padding: 8px;" class="full-width">
+
                             <select name="category" required style="padding: 8px;" class="full-width">
+                                <option value="Latest Jobs">Latest Jobs</option>
                                 <option value="Result">Result</option>
                                 <option value="Admit Card">Admit Card</option>
-                                <option value="Latest Jobs">Latest Jobs</option>
+                                <option value="Answer Key">Answer Key</option>
+                                <option value="Admission">Admission</option>
+                                <option value="Syllabus">Syllabus</option>
                             </select>
+
+                            <input type="text" name="department"
+                                placeholder="Department (e.g. Staff Selection Commission)" style="padding: 8px;"
+                                class="full-width">
+
+                            <div class="full-width" style="display: flex; gap: 10px; align-items: center;">
+                                <label>Last Date:</label>
+                                <input type="date" name="last_date" style="padding: 8px; flex-grow: 1;">
+                            </div>
+
+                            <textarea name="description" placeholder="Brief description (optional)"
+                                style="padding: 8px; width: 100%; height: 60px;" class="full-width"></textarea>
+
+                            <div class="full-width">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" name="is_trending">
+                                    Mark as Trending 🔥
+                                </label>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Add Form Update</button>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Add Update</button>
                     </form>
 
                     <table style="margin-top: 20px;">

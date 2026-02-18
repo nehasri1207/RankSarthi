@@ -4,161 +4,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Forms & Results - RankSaarthi</title>
+    <title>Latest Government Jobs & Results - RankSaarthi</title>
     <link rel="stylesheet" href="/css/variables.css">
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/main.css">
-    <style>
-        .forms-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            /* Force 3 columns */
-            gap: 20px;
-            margin-top: 40px;
-        }
-
-        .column-card {
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            height: fit-content;
-        }
-
-        .column-header {
-            padding: 15px;
-            text-align: center;
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: white;
-            text-transform: uppercase;
-        }
-
-        /* Distinct Colors for Columns */
-        .header-result {
-            background: #e74c3c;
-        }
-
-        .header-admit {
-            background: #3498db;
-        }
-
-        .header-jobs {
-            background: #27ae60;
-        }
-
-        .link-list {
-            padding: 0;
-            list-style: none;
-            margin: 0;
-        }
-
-        .link-item {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .link-item:last-child {
-            border-bottom: none;
-        }
-
-        .link-item a {
-            display: block;
-            padding: 12px 15px;
-            color: var(--color-secondary);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: background 0.2s;
-        }
-
-        .link-item a:hover {
-            background: rgba(var(--color-primary-rgb), 0.1);
-            color: var(--color-primary);
-            padding-left: 20px;
-            /* Slight slide effect */
-        }
-
-        @media (max-width: 900px) {
-            .forms-grid {
-                grid-template-columns: 1fr;
-                /* Stack on mobile */
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/css/modern_portal.css">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
 
 <body>
-    <div class="main-wrapper">
-        <%- include('partials/header') %>
+    <!-- Header -->
+    <header class="portal-header">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <ion-icon name="school-outline"></ion-icon> RankSaarthi
+            </a>
 
-            <div class="container" style="padding-top: 40px; padding-bottom: 60px;">
-                <div style="text-align: center; margin-bottom: 40px;">
-                    <h1 class="hero-title" style="font-size: 2.5rem;">Sarkari Updates</h1>
-                    <p class="hero-subtitle">Latest Results, Admit Cards, and Job Notifications</p>
-                </div>
+            <div class="search-bar">
+                <form action="/forms" method="GET">
+                    <ion-icon name="search-outline" class="search-icon"></ion-icon>
+                    <input type="text" name="q" class="search-input" placeholder="Search jobs, results..."
+                        value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
+                </form>
+            </div>
 
-                <div class="forms-grid">
-                    <!-- Column 1: Result -->
-                    <div class="column-card glass-card">
-                        <div class="column-header header-result">Result</div>
-                        <ul class="link-list">
-                            <% if (updates.Result && updates.Result.length> 0) { %>
-                                <% updates.Result.forEach(item=> { %>
-                                    <li class="link-item">
-                                        <a href="<%= item.url %>" target="_blank">
-                                            <%= item.title %>
-                                        </a>
-                                    </li>
-                                    <% }); %>
-                                        <% } else { %>
-                                            <li class="link-item"
-                                                style="padding: 15px; text-align: center; color: #999;">No updates</li>
-                                            <% } %>
-                        </ul>
-                    </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button id="theme-toggle"
+                    style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--text-main);">
+                    <ion-icon name="moon-outline"></ion-icon>
+                </button>
+            </div>
+        </div>
+    </header>
 
-                    <!-- Column 2: Admit Card -->
-                    <div class="column-card glass-card">
-                        <div class="column-header header-admit">Admit Card</div>
-                        <ul class="link-list">
-                            <% if (updates['Admit Card'] && updates['Admit Card'].length> 0) { %>
-                                <% updates['Admit Card'].forEach(item=> { %>
-                                    <li class="link-item">
-                                        <a href="<%= item.url %>" target="_blank">
-                                            <%= item.title %>
-                                        </a>
-                                    </li>
-                                    <% }); %>
-                                        <% } else { %>
-                                            <li class="link-item"
-                                                style="padding: 15px; text-align: center; color: #999;">No updates</li>
-                                            <% } %>
-                        </ul>
-                    </div>
+    <!-- Hero -->
+    <section class="hero-banner">
+        <h1 class="hero-title">Find Latest Government Jobs & Results</h1>
+        <p>One-stop destination for all Sarkari Updates</p>
+        <div class="quick-actions">
+            <a href="/forms?cat=Latest Jobs" class="action-btn">Browse Jobs</a>
+            <a href="/forms?cat=Result" class="action-btn">Check Results</a>
+            <a href="/forms?cat=Admit Card" class="action-btn">Download Admit Card</a>
+        </div>
+    </section>
 
-                    <!-- Column 3: Latest Jobs -->
-                    <div class="column-card glass-card">
-                        <div class="column-header header-jobs">Latest Jobs</div>
-                        <ul class="link-list">
-                            <% if (updates['Latest Jobs'] && updates['Latest Jobs'].length> 0) { %>
-                                <% updates['Latest Jobs'].forEach(item=> { %>
-                                    <li class="link-item">
-                                        <a href="<%= item.url %>" target="_blank">
-                                            <%= item.title %>
-                                        </a>
-                                    </li>
-                                    <% }); %>
-                                        <% } else { %>
-                                            <li class="link-item"
-                                                style="padding: 15px; text-align: center; color: #999;">No updates</li>
-                                            <% } %>
-                        </ul>
-                    </div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="filter-group">
+                <div class="filter-title">Categories</div>
+                <div class="filter-list">
+                    <a href="/forms" class="filter-link <%= !activeCategory ? 'active' : '' %>">All Updates</a>
+                    <a href="/forms?cat=Latest Jobs"
+                        class="filter-link <%= activeCategory === 'Latest Jobs' ? 'active' : '' %>">Latest Jobs</a>
+                    <a href="/forms?cat=Result"
+                        class="filter-link <%= activeCategory === 'Result' ? 'active' : '' %>">Results</a>
+                    <a href="/forms?cat=Admit Card"
+                        class="filter-link <%= activeCategory === 'Admit Card' ? 'active' : '' %>">Admit Cards</a>
+                    <a href="/forms?cat=Answer Key"
+                        class="filter-link <%= activeCategory === 'Answer Key' ? 'active' : '' %>">Answer Keys</a>
+                    <a href="/forms?cat=Admission"
+                        class="filter-link <%= activeCategory === 'Admission' ? 'active' : '' %>">Admissions</a>
+                    <a href="/forms?cat=Syllabus"
+                        class="filter-link <%= activeCategory === 'Syllabus' ? 'active' : '' %>">Syllabus</a>
                 </div>
             </div>
 
-            <%- include('partials/footer') %>
+            <div class="filter-group">
+                <div class="filter-title">Trending Now 🔥</div>
+                <% if (typeof trending !=='undefined' && trending.length> 0) { %>
+                    <% trending.forEach(item=> { %>
+                        <a href="<%= item.url %>" target="_blank" class="filter-link" style="font-size: 0.9rem;">
+                            <%= item.title %>
+                        </a>
+                        <% }); %>
+                            <% } else { %>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">No trending updates.</p>
+                                <% } %>
+            </div>
+        </aside>
+
+        <!-- Main Grid -->
+        <main>
+            <!-- Section Title based on Filter -->
+            <h2 style="margin-bottom: 25px; color: var(--text-main);">
+                <%= activeCategory ? activeCategory : 'Latest Updates' %>
+            </h2>
+
+            <!-- Job Cards Grid -->
+            <div class="jobs-grid">
+                <% // Helper to get all items if no groups let allItems=[]; if (typeof updates.length !=='undefined' ) {
+                    // It's an array (search results) allItems=updates; } else { // It's grouped object
+                    Object.values(updates).forEach(group=> {
+                    if(group) allItems = allItems.concat(group);
+                    });
+                    // Sort by date desc
+                    allItems.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+                    }
+                    %>
+
+                    <% if (allItems.length> 0) { %>
+                        <% allItems.forEach(item=> { %>
+                            <div class="job-card">
+                                <% if (item.is_trending) { %>
+                                    <div class="job-badge">Trending</div>
+                                    <% } %>
+
+                                        <h3 class="job-title">
+                                            <%= item.title %>
+                                        </h3>
+                                        <div class="job-dept">
+                                            <%= item.department || item.category %>
+                                        </div>
+
+                                        <p
+                                            style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; flex-grow: 1;">
+                                            <%= item.description ? (item.description.substring(0, 80) + '...' ) : '' %>
+                                        </p>
+
+                                        <div class="job-meta">
+                                            <span>
+                                                <% if (item.last_date) { %>
+                                                    Last Date: <%= new Date(item.last_date).toLocaleDateString() %>
+                                                        <% } else { %>
+                                                            Posted: <%= new Date(item.created_at).toLocaleDateString()
+                                                                %>
+                                                                <% } %>
+                                            </span>
+                                            <a href="<%= item.url %>" target="_blank" class="btn-view">View details
+                                                â†’</a>
+                                        </div>
+                            </div>
+                            <% }); %>
+                                <% } else { %>
+                                    <div
+                                        style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
+                                        <h3>No updates found</h3>
+                                        <p>Try searching for something else or browse categories.</p>
+                                    </div>
+                                    <% } %>
+            </div>
+        </main>
     </div>
+
+    <!-- Footer -->
+    <footer class="modern-footer">
+        <div
+            style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;">
+            <div>
+                <h3>RankSaarthi</h3>
+                <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                    Your trusted companion for Government Job updates, Result analysis, and Exam preparation.
+                </p>
+            </div>
+            <div>
+                <h4>Quick Links</h4>
+                <ul style="list-style: none; padding: 0; line-height: 2;">
+                    <li><a href="/" style="color: rgba(255,255,255,0.7); text-decoration: none;">Home</a></li>
+                    <li><a href="/forms" style="color: rgba(255,255,255,0.7); text-decoration: none;">Latest Jobs</a>
+                    </li>
+                    <li><a href="/calculator?exam_id=1"
+                            style="color: rgba(255,255,255,0.7); text-decoration: none;">Rank Calculator</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Contact</h4>
+                <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                    Email: support@ranksaarthi.com<br>
+                    Telegram: @RankSaarthi
+                </p>
+                <div style="margin-top: 15px; display: flex; gap: 15px; font-size: 1.2rem;">
+                    <ion-icon name="logo-twitter"></ion-icon>
+                    <ion-icon name="logo-facebook"></ion-icon>
+                    <ion-icon name="logo-instagram"></ion-icon>
+                </div>
+            </div>
+        </div>
+        <div
+            style="text-align: center; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 40px; padding-top: 20px; font-size: 0.85rem; color: rgba(255,255,255,0.5);">
+            &copy; 2024 RankSaarthi. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        // Dark Mode Toggle Logic
+        const toggleBtn = document.getElementById('theme-toggle');
+        const icon = toggleBtn.querySelector('ion-icon');
+
+        // Check saved preference
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            icon.setAttribute('name', 'sunny-outline');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            if (current === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                icon.setAttribute('name', 'moon-outline');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                icon.setAttribute('name', 'sunny-outline');
+            }
+        });
+    </script>
 </body>
 
 </html>

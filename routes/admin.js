@@ -301,10 +301,13 @@ router.get('/student/:id', requireAdmin, (req, res) => {
 // --- FORM UPDATES MANAGEMENT ---
 
 router.post('/add-form', (req, res) => {
-    const { title, url, category } = req.body;
+    const { title, url, category, department, last_date, is_trending, description } = req.body;
     try {
-        const stmt = db.prepare('INSERT INTO form_updates (title, url, category) VALUES (?, ?, ?)');
-        stmt.run(title, url, category);
+        const stmt = db.prepare(`
+            INSERT INTO form_updates (title, url, category, department, last_date, is_trending, description) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        stmt.run(title, url, category, department || null, last_date || null, is_trending === 'on' ? 1 : 0, description || null);
         res.redirect('/admin');
     } catch (error) {
         console.error(error);
