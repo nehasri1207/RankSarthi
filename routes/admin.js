@@ -38,6 +38,7 @@ router.get('/logout', (req, res) => {
 // Dashboard with Analytics
 router.get('/dashboard', requireAdmin, (req, res) => {
     const exams = db.prepare('SELECT * FROM exams').all();
+    const formUpdates = db.prepare('SELECT * FROM form_updates ORDER BY created_at DESC').all();
 
     // Global Analytics
     const globalStats = {
@@ -92,7 +93,8 @@ router.get('/dashboard', requireAdmin, (req, res) => {
         categoryStats,
         examCategoryStats,
         exam_id_map, // New
-        shiftStats
+        shiftStats,
+        formUpdates // Pass form updates to view
     });
 });
 
@@ -294,6 +296,32 @@ router.get('/student/:id', requireAdmin, (req, res) => {
         student,
         sections
     });
+});
+
+// --- FORM UPDATES MANAGEMENT ---
+
+router.post('/add-form', (req, res) => {
+    const { title, url, category } = req.body;
+    try {
+        const stmt = db.prepare('INSERT INTO form_updates (title, url, category) VALUES (?, ?, ?)');
+        stmt.run(title, url, category);
+        res.redirect('/admin');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error adding form update');
+    }
+});
+
+router.post('/delete-form', (req, res) => {
+    const { id } = req.body;
+    try {
+        const stmt = db.prepare('DELETE FROM form_updates WHERE id = ?');
+        stmt.run(id);
+        res.redirect('/admin');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error deleting form update');
+    }
 });
 
 module.exports = router;

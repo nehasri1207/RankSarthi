@@ -10,18 +10,7 @@ async function parseDigialm(url) {
     }
 }
 
-async function parseHtmlContent(htmlContent, type = 'standard') {
-    if (type === 'ssc' || htmlContent.includes('sscexam.cbexams.com') || htmlContent.includes('SSC')) {
-        // For SSC, we might need basic parsing similar to extractSSCQuestions but without the multi-part fetch capability
-        // if the user only pasted one part. However, usually they paste the full view.
-        // Let's reuse extractSSCQuestions but we need a cheerio object.
-        const $ = cheerio.load(htmlContent);
-        const candidateInfo = extractSSCCandidateInfo($);
-        return extractSSCQuestions($, candidateInfo);
-    } else {
-        return parseStandardHtml(htmlContent);
-    }
-}
+
 
 async function parseSSC(url) {
     try {
@@ -555,4 +544,4 @@ function parseStandardHtml(html) {
     }
 }
 
-module.exports = { parseDigialm, parseHtmlContent };
+module.exports = { parseDigialm };

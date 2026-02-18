@@ -96,3 +96,12 @@ SELECT id, 60, 79.9, 1001, 10000, 'Medium' FROM exams;
 
 INSERT OR IGNORE INTO rank_data (exam_id, min_score, max_score, min_rank, max_rank, cutoff_probability) 
 SELECT id, 0, 59.9, 10001, 500000, 'Low' FROM exams;
+
+-- Application Forms / Updates Table
+CREATE TABLE IF NOT EXISTS form_updates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    category TEXT CHECK(category IN ('Result', 'Admit Card', 'Latest Jobs')) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
