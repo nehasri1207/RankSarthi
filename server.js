@@ -48,6 +48,15 @@ app.use((req, res) => {
     res.status(404).render('404', { title: 'Page Not Found' });
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled Server Error:');
+    console.error(err.stack);
+    if (!res.headersSent) {
+        res.status(500).send('Internal Server Error: ' + err.message);
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`RankSaarthi Server running on http://localhost:${PORT}`);
 });

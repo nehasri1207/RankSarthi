@@ -195,11 +195,11 @@
 
                             <!-- URL Parser Form -->
                             <div id="url-tab" class="tab-content active">
-                                <p style="text-align: center; color: var(--color-text-muted); margin-bottom: 20px;">
-                                    Paste your
-                                    Digialm URL directly.</p>
+                                <p id="url-status-msg"
+                                    style="text-align: center; color: var(--color-text-muted); margin-bottom: 20px;">
+                                    Paste your Digialm URL directly.</p>
 
-                                <form action="/calculator/parse" method="POST">
+                                <form id="url-parse-form" action="/result" method="POST">
                                     <input type="hidden" name="exam_id" value="<%= exam.id %>">
 
                                     <div class="input-group">
@@ -330,9 +330,107 @@
                                         </div>
                                     </div>
 
-                                    <button type="submit" class="btn btn-primary" style="width: 100%;">Calculate from
-                                        URL</button>
+                                    <button type="submit" id="url-submit-btn" class="btn btn-primary"
+                                        style="width: 100%;">Calculate from URL</button>
                                 </form>
+
+                                <script>
+                                    // Client-side fetch: browser downloads the answer key page (bypasses server IP blocks),
+                                    // then sends raw HTML to our server for parsing.
+                                    document.getElementById('url-parse-form').addEventListener('submit', async function (e) {
+                                        e.preventDefault();
+                                        const form = this;
+                                        const urlInput = form.querySelector('input[name="url"]').value.trim();
+                                        const btn = document.getElementById('url-submit-btn');
+                                        const msg = document.getElementById('url-status-msg');
+
+                                        if (!urlInput) return;
+
+                                        // Show loading state
+                                        btn.disabled = true;
+                                        btn.textContent = 'Fetching Answer Key...';
+                                        msg.style.color = 'var(--color-primary)';
+                                        msg.textContent = 'Step 1/2: Downloading your answer key page...';
+
+                                        let html = '';
+                                        try {
+                                            const fetchRes = await fetch(urlInput, { mode: 'no-cors' });
+                                            // no-cors gives opaque response — we need cors or a proxy
+                                            // Try with cors first, fallback info shown
+                                            throw new Error('CORS_NEEDED');
+                                        } catch (corsErr) {
+                                            // Browser CORS blocks direct fetch of cross-origin pages.
+                                            // Use a CORS proxy to fetch the HTML on behalf of the browser.
+                                            try {
+                                                msg.textContent = 'Step 1/2: Fetching via proxy (may take a moment)...';
+                                                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(urlInput);
+                                                const proxyRes = await fetch(proxyUrl);
+                                                if (!proxyRes.ok) throw new Error('Proxy failed: ' + proxyRes.status);
+                                                const data = await proxyRes.json();
+                                                html = data.contents;
+                                                if (!html || html.length < 500) throw new Error('Empty response from proxy');
+                                            } catch (proxyErr) {
+                                                console.error('Proxy Error:', proxyErr);
+                                                btn.disabled = false;
+                                                btn.textContent = 'Calculate from URL';
+                                                msg.style.color = 'var(--color-error, red)';
+                                                msg.textContent = 'Could not fetch the answer key. Please ensure the URL is correct and publicly accessible.';
+                                                return;
+                                            }
+                                        }
+
+                                        // Step 2: Send HTML to server for parsing
+                                        msg.textContent = 'Step 2/2: Calculating your score...';
+                                        try {
+                                            const parseRes = await fetch('/calculator/parse-html', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'text/html' },
+                                                body: html
+                                            });
+                                            if (!parseRes.ok) throw new Error('Server parse failed: ' + parseRes.status);
+                                            const result = await parseRes.json();
+                                            if (result.error) throw new Error(result.error);
+
+                                            // Build a hidden form and submit it to /result
+                                            const hiddenForm = document.createElement('form');
+                                            hiddenForm.method = 'POST';
+                                            hiddenForm.action = '/result';
+                                            hiddenForm.style.display = 'none';
+
+                                            const fields = {
+                                                exam_id: form.querySelector('input[name="exam_id"]').value,
+                                                correct: result.correct,
+                                                wrong: result.wrong,
+                                                category: form.querySelector('select[name="category"]').value,
+                                                gender: form.querySelector('select[name="gender"]').value,
+                                                medium: form.querySelector('select[name="medium"]').value,
+                                                horizontal_category: form.querySelector('select[name="horizontal_category"]').value || '',
+                                                state: form.querySelector('select[name="state"]').value || '',
+                                                zone: (form.querySelector('select[name="zone"]') || {}).value || '',
+                                                sections: btoa(unescape(encodeURIComponent(JSON.stringify(result.sections || {})))),
+                                                info: btoa(unescape(encodeURIComponent(JSON.stringify(result.candidateInfo || {})))),
+                                                wrongQuestions: btoa(unescape(encodeURIComponent(JSON.stringify(result.wrongQuestions || []))))
+                                            };
+
+                                            for (const [key, val] of Object.entries(fields)) {
+                                                const input = document.createElement('input');
+                                                input.type = 'hidden';
+                                                input.name = key;
+                                                input.value = val;
+                                                hiddenForm.appendChild(input);
+                                            }
+                                            document.body.appendChild(hiddenForm);
+                                            hiddenForm.submit();
+
+                                        } catch (parseErr) {
+                                            console.error('Parse Error:', parseErr);
+                                            btn.disabled = false;
+                                            btn.textContent = 'Calculate from URL';
+                                            msg.style.color = 'var(--color-error, red)';
+                                            msg.textContent = 'Failed to parse the answer key. Please try again or use manual entry.';
+                                        }
+                                    });
+                                </script>
                             </div>
 
 
@@ -340,7 +438,7 @@
                                 <p style="text-align: center; color: var(--color-text-muted); margin-bottom: 20px;">
                                     Enter your
                                     attempts manually.</p>
-                                <form action="/calculator/calculate" method="POST">
+                                <form action="/result" method="POST">
                                     <input type="hidden" name="exam_id" value="<%= exam.id %>">
 
                                     <div class="input-group">

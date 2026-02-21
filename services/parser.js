@@ -544,4 +544,4 @@ function parseStandardHtml(html) {
     }
 }
 
-module.exports = { parseDigialm };
+module.exports = { parseDigialm, parseStandardHtml };

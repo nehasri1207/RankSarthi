@@ -36,94 +36,104 @@ router.get('/logout', (req, res) => {
 });
 
 // Dashboard with Analytics
-router.get('/dashboard', requireAdmin, (req, res) => {
-    const exams = db.prepare('SELECT * FROM exams').all();
-    const formUpdates = db.prepare('SELECT * FROM form_updates ORDER BY created_at DESC').all();
+router.get('/dashboard', requireAdmin, async (req, res) => {
+    try {
+        const [exams] = await db.query('SELECT * FROM exams');
 
-    // Global Analytics
-    const globalStats = {
-        totalParticipants: db.prepare('SELECT COUNT(*) as count FROM user_results').get().count,
-        avgScore: db.prepare('SELECT AVG(total_score) as avg FROM user_results').get().avg || 0,
-        totalExams: exams.length
-    };
+        // Global Analytics
+        const [[{ count: totalParticipants }]] = await db.query('SELECT COUNT(*) as count FROM user_results');
+        const [[{ avg: avgScore }]] = await db.query('SELECT AVG(total_score) as avg FROM user_results');
 
-    // Exam-wise participation
-    const examStats = db.prepare(`
-        SELECT e.id, e.name, COUNT(r.id) as participants, AVG(r.total_score) as avg_score
-        FROM exams e
-        LEFT JOIN user_results r ON e.id = r.exam_id
-        GROUP BY e.id
-    `).all();
+        const globalStats = {
+            totalParticipants: totalParticipants || 0,
+            avgScore: avgScore || 0,
+            totalExams: exams.length
+        };
 
-    // Map for easy ID lookup in template
-    const exam_id_map = {};
-    exams.forEach(e => exam_id_map[e.name] = e.id);
+        // Exam-wise participation
+        const [examStats] = await db.query(`
+            SELECT e.id, e.name, COUNT(r.id) as participants, AVG(r.total_score) as avg_score
+            FROM exams e
+            LEFT JOIN user_results r ON e.id = r.exam_id
+            GROUP BY e.id, e.name
+        `);
 
-    // Category Distribution (Global)
-    const categoryStats = db.prepare(`
-        SELECT category, COUNT(*) as count
-        FROM user_results
-        GROUP BY category
-    `).all();
+        // Map for easy ID lookup in template
+        const exam_id_map = {};
+        exams.forEach(e => exam_id_map[e.name] = e.id);
 
-    // NEW: Exam + Category Breakdown for Charts
-    const examCategoryStats = db.prepare(`
-        SELECT e.name as exam_name, r.category, COUNT(r.id) as count, AVG(r.total_score) as avg_score
-        FROM user_results r
-        JOIN exams e ON r.exam_id = e.id
-        GROUP BY r.exam_id, r.category
-        ORDER BY e.name, r.category
-    `).all();
+        // Category Distribution (Global)
+        const [categoryStats] = await db.query(`
+            SELECT category, COUNT(*) as count
+            FROM user_results
+            GROUP BY category
+        `);
 
-    // Shift Analysis (Toughness check) - Grouped by Exam
-    const shiftStats = db.prepare(`
-        SELECT e.name as exam_name, r.exam_date, r.exam_shift, AVG(r.total_score) as avg_score, COUNT(r.id) as count
-        FROM user_results r
-        JOIN exams e ON r.exam_id = e.id
-        GROUP BY r.exam_id, r.exam_date, r.exam_shift
-        HAVING count > 0
-        ORDER BY e.name, r.exam_date DESC
-    `).all();
+        // NEW: Exam + Category Breakdown for Charts
+        const [examCategoryStats] = await db.query(`
+            SELECT e.name as exam_name, r.category, COUNT(r.id) as count, AVG(r.total_score) as avg_score
+            FROM user_results r
+            JOIN exams e ON r.exam_id = e.id
+            GROUP BY e.name, r.category
+            ORDER BY e.name, r.category
+        `);
 
-    res.render('admin_dashboard', {
-        title: 'Admin Dashboard',
-        exams,
-        globalStats,
-        examStats,
-        categoryStats,
-        examCategoryStats,
-        exam_id_map, // New
-        shiftStats,
-        formUpdates // Pass form updates to view
-    });
+        // Shift Analysis (Toughness check) - Grouped by Exam
+        const [shiftStats] = await db.query(`
+            SELECT e.name as exam_name, r.exam_date, r.exam_shift, AVG(r.total_score) as avg_score, COUNT(r.id) as count
+            FROM user_results r
+            JOIN exams e ON r.exam_id = e.id
+            GROUP BY e.name, r.exam_date, r.exam_shift
+            HAVING count > 0
+            ORDER BY e.name, r.exam_date DESC
+        `);
+
+        res.render('admin_dashboard', {
+            title: 'Admin Dashboard',
+            exams,
+            globalStats,
+            examStats,
+            categoryStats,
+            examCategoryStats,
+            exam_id_map,
+            shiftStats
+        });
+    } catch (err) {
+        console.error('Dashboard Error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // NEW: Export Data as CSV
-router.get('/export-csv', requireAdmin, (req, res) => {
-    const data = db.prepare(`
-        SELECT r.*, e.name as exam_name 
-        FROM user_results r
-        JOIN exams e ON r.exam_id = e.id
-    `).all();
+router.get('/export-csv', requireAdmin, async (req, res) => {
+    try {
+        const [data] = await db.query(`
+            SELECT r.*, e.name as exam_name 
+            FROM user_results r
+            JOIN exams e ON r.exam_id = e.id
+        `);
 
-    if (data.length === 0) return res.send("No data to export");
+        if (data.length === 0) return res.send("No data to export");
 
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(row =>
-        Object.values(row).map(val => `"${val}"`).join(',')
-    ).join('\n');
+        const headers = Object.keys(data[0]).join(',');
+        const rows = data.map(row =>
+            Object.values(row).map(val => `"${val}"`).join(',')
+        ).join('\n');
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=ranksaarthi_data.csv');
-    res.send(`${headers}\n${rows}`);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=ranksaarthi_data.csv');
+        res.send(`${headers}\n${rows}`);
+    } catch (err) {
+        console.error('Export Error:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // Add Exam
-router.post('/add-exam', requireAdmin, (req, res) => {
+router.post('/add-exam', requireAdmin, async (req, res) => {
     const { name, category, total_questions, marks_per_question, negative_marks } = req.body;
     try {
-        const stmt = db.prepare('INSERT INTO exams (name, category, total_questions, marks_per_question, negative_marks) VALUES (?, ?, ?, ?, ?)');
-        stmt.run(name, category, total_questions, marks_per_question, negative_marks);
+        await db.query('INSERT INTO exams (name, category, total_questions, marks_per_question, negative_marks) VALUES (?, ?, ?, ?, ?)', [name, category, total_questions, marks_per_question, negative_marks]);
     } catch (err) {
         console.error(err);
     }
@@ -131,44 +141,43 @@ router.post('/add-exam', requireAdmin, (req, res) => {
 });
 
 // Add Rank Data
-router.post('/add-rank-data', requireAdmin, (req, res) => {
+router.post('/add-rank-data', requireAdmin, async (req, res) => {
     const { exam_id, min_score, max_score, min_rank, max_rank, cutoff_probability } = req.body;
     try {
-        const stmt = db.prepare('INSERT INTO rank_data (exam_id, min_score, max_score, min_rank, max_rank, cutoff_probability) VALUES (?, ?, ?, ?, ?, ?)');
-        stmt.run(exam_id, min_score, max_score, min_rank, max_rank, cutoff_probability);
+        await db.query('INSERT INTO rank_data (exam_id, min_score, max_score, min_rank, max_rank, cutoff_probability) VALUES (?, ?, ?, ?, ?, ?)', [exam_id, min_score, max_score, min_rank, max_rank, cutoff_probability]);
+        res.status(200).send('Success');
     } catch (err) {
         console.error(err);
+        res.status(500).send('Error');
     }
 });
 
 // Delete Exam
-router.post('/delete-exam', requireAdmin, (req, res) => {
+router.post('/delete-exam', requireAdmin, async (req, res) => {
     const { exam_id } = req.body;
     if (!exam_id) return res.redirect('/admin/dashboard');
 
+    const connection = await db.getConnection();
     try {
-        const deleteResults = db.prepare("DELETE FROM user_results WHERE exam_id = ?");
-        const deleteExam = db.prepare("DELETE FROM exams WHERE id = ?");
-
-        const transaction = db.transaction((id) => {
-            deleteResults.run(id);
-            deleteExam.run(id);
-        });
-
-        transaction(exam_id);
+        await connection.beginTransaction();
+        await connection.query("DELETE FROM user_results WHERE exam_id = ?", [exam_id]);
+        await connection.query("DELETE FROM exams WHERE id = ?", [exam_id]);
+        await connection.commit();
     } catch (err) {
+        await connection.rollback();
         console.error("Delete Exam Error:", err);
+    } finally {
+        connection.release();
     }
     res.redirect('/admin/dashboard');
 });
 
 // Calculate Normalization
 const { calculateNormalization } = require('../services/normalization');
-router.post('/normalize-scores', requireAdmin, (req, res) => {
+router.post('/normalize-scores', requireAdmin, async (req, res) => {
     const { exam_id } = req.body;
     try {
-        const result = calculateNormalization(exam_id);
-        // Optionally flash message
+        await calculateNormalization(exam_id);
     } catch (err) {
         console.error("Normalization Error:", err);
     }
@@ -176,17 +185,17 @@ router.post('/normalize-scores', requireAdmin, (req, res) => {
 });
 
 // Toggle Normalization Visibility
-router.post('/toggle-normalization', requireAdmin, (req, res) => {
+router.post('/toggle-normalization', requireAdmin, async (req, res) => {
     const { exam_id, is_visible } = req.body;
     try {
         const val = parseInt(is_visible); // 1 or 0
 
         // If Enabling, Calculate first!
         if (val === 1) {
-            calculateNormalization(exam_id);
+            await calculateNormalization(exam_id);
         }
 
-        db.prepare('UPDATE exams SET is_normalization_visible = ? WHERE id = ?').run(val, exam_id);
+        await db.query('UPDATE exams SET is_normalization_visible = ? WHERE id = ?', [val, exam_id]);
     } catch (err) {
         console.error("Toggle Error:", err);
     }
@@ -194,136 +203,116 @@ router.post('/toggle-normalization', requireAdmin, (req, res) => {
 });
 
 // Detailed Exam Analysis
-router.get('/exam/:id', requireAdmin, (req, res) => {
+router.get('/exam/:id', requireAdmin, async (req, res) => {
     const examId = req.params.id;
-    const exam = db.prepare('SELECT * FROM exams WHERE id = ?').get(examId);
-    if (!exam) return res.redirect('/admin/dashboard');
+    try {
+        const [exams] = await db.query('SELECT * FROM exams WHERE id = ?', [examId]);
+        const exam = exams[0];
+        if (!exam) return res.redirect('/admin/dashboard');
 
-    // Categorical Data for this specific exam
-    const categoryStats = db.prepare(`
-        SELECT category, COUNT(*) as count, AVG(total_score) as avg_score, MAX(total_score) as topper_score
-        FROM user_results
-        WHERE exam_id = ?
-        GROUP BY category
-    `).all(examId);
+        // Categorical Data for this specific exam
+        const [categoryStats] = await db.query(`
+            SELECT category, COUNT(*) as count, AVG(total_score) as avg_score, MAX(total_score) as topper_score
+            FROM user_results
+            WHERE exam_id = ?
+            GROUP BY category
+        `, [examId]);
 
-    // Shift Analysis for this exam
-    const shiftStats = db.prepare(`
-        SELECT exam_date, exam_shift, AVG(total_score) as avg_score, COUNT(*) as count
-        FROM user_results
-        WHERE exam_id = ?
-        GROUP BY exam_date, exam_shift
-        ORDER BY exam_date, exam_shift
-    `).all(examId);
+        // Shift Analysis for this exam
+        const [shiftStats] = await db.query(`
+            SELECT exam_date, exam_shift, AVG(total_score) as avg_score, COUNT(*) as count
+            FROM user_results
+            WHERE exam_id = ?
+            GROUP BY exam_date, exam_shift
+            ORDER BY exam_date, exam_shift
+        `, [examId]);
 
-    // Recent student results for this exam
-    const studentResults = db.prepare(`
-        SELECT id, name, roll_no, category, state, zone, total_score, created_at
-        FROM user_results
-        WHERE exam_id = ?
-        ORDER BY total_score DESC
-        LIMIT 100
-    `).all(examId);
+        // Recent student results for this exam
+        const [studentResults] = await db.query(`
+            SELECT id, name, roll_no, category, state, zone, total_score, created_at
+            FROM user_results
+            WHERE exam_id = ?
+            ORDER BY total_score DESC
+            LIMIT 100
+        `, [examId]);
 
-    // Zone Analysis
-    const zoneStats = db.prepare('SELECT zone, COUNT(*) as count, AVG(total_score) as avg_score, MAX(total_score) as topper_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone ORDER BY avg_score DESC').all(examId, '');
+        // Zone Analysis
+        const [zoneStats] = await db.query('SELECT zone, COUNT(*) as count, AVG(total_score) as avg_score, MAX(total_score) as topper_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone ORDER BY avg_score DESC', [examId, '']);
 
-    // Category Wise Zone Analysis (Top 3 for each zone)
-    const categoryZoneStats = db.prepare('SELECT zone, category, COUNT(*) as count, AVG(total_score) as avg_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone, category ORDER BY zone, avg_score DESC').all(examId, '');
+        // Category Wise Zone Analysis
+        const [categoryZoneStats] = await db.query('SELECT zone, category, COUNT(*) as count, AVG(total_score) as avg_score FROM user_results WHERE exam_id = ? AND zone IS NOT NULL AND zone != ? GROUP BY zone, category ORDER BY zone, avg_score DESC', [examId, '']);
 
-    // Marks Distribution Table (5-mark intervals, category-wise)
-    const maxMarks = exam.total_marks;
-    const categories = ['GENERAL', 'EWS', 'OBC(NCL)', 'SC', 'ST'];
-    const marksDistribution = [];
+        // Marks Distribution Table (5-mark intervals, category-wise)
+        const maxMarks = exam.total_marks;
+        const categories = ['GENERAL', 'EWS', 'OBC(NCL)', 'SC', 'ST'];
+        const marksDistribution = [];
 
-    // Generate score ranges from max to 0 with 5-mark intervals
-    for (let score = maxMarks; score >= 0; score -= 5) {
-        const row = { score };
+        // Generate score ranges
+        for (let score = maxMarks; score >= 0; score -= 5) {
+            const row = { score };
 
-        // For each category, count students who scored >= this score
-        categories.forEach(category => {
-            const count = db.prepare(`
-                SELECT COUNT(*) as count 
-                FROM user_results 
-                WHERE exam_id = ? AND category = ? AND total_score >= ?
-            `).get(examId, category, score);
-            row[category] = count.count;
+            // Optimization: Parallel queries for categories
+            const categoryPromises = categories.map(cat =>
+                db.query('SELECT COUNT(*) as count FROM user_results WHERE exam_id = ? AND category = ? AND total_score >= ?', [examId, cat, score])
+            );
+
+            const categoryResults = await Promise.all(categoryPromises);
+            categories.forEach((cat, idx) => {
+                row[cat] = categoryResults[idx][0][0].count;
+            });
+
+            // Total across all categories
+            const [[{ count: totalCount }]] = await db.query('SELECT COUNT(*) as count FROM user_results WHERE exam_id = ? AND total_score >= ?', [examId, score]);
+            row.TOTAL = totalCount;
+
+            marksDistribution.push(row);
+        }
+
+        res.render('admin_exam_detail', {
+            title: `Analysis - ${exam.name}`,
+            exam,
+            categoryStats,
+            shiftStats,
+            studentResults,
+            zoneStats,
+            categoryZoneStats,
+            marksDistribution,
+            categories
         });
-
-        // Total across all categories
-        const total = db.prepare(`
-            SELECT COUNT(*) as count 
-            FROM user_results 
-            WHERE exam_id = ? AND total_score >= ?
-        `).get(examId, score);
-        row.TOTAL = total.count;
-
-        marksDistribution.push(row);
+    } catch (err) {
+        console.error('Exam Detail Error:', err);
+        res.status(500).send('Internal Server Error');
     }
-
-    res.render('admin_exam_detail', {
-        title: `Analysis - ${exam.name}`,
-        exam,
-        categoryStats,
-        shiftStats,
-        studentResults,
-        zoneStats,
-        categoryZoneStats,
-        marksDistribution,
-        categories
-    });
 });
 
 // Student Detail View
-router.get('/student/:id', requireAdmin, (req, res) => {
+router.get('/student/:id', requireAdmin, async (req, res) => {
     const studentId = req.params.id;
-    const student = db.prepare(`
-        SELECT r.*, e.name as exam_name, e.marks_per_question, e.negative_marks
-        FROM user_results r
-        JOIN exams e ON r.exam_id = e.id
-        WHERE r.id = ?
-    `).get(studentId);
-
-    if (!student) return res.redirect('/admin/dashboard');
-
-    let sections = null;
-    if (student.sections_data) {
-        try { sections = JSON.parse(student.sections_data); } catch (e) { }
-    }
-
-    res.render('admin_student_detail', {
-        title: `Student Detail - ${student.name}`,
-        student,
-        sections
-    });
-});
-
-// --- FORM UPDATES MANAGEMENT ---
-
-router.post('/add-form', (req, res) => {
-    const { title, url, category, department, last_date, is_trending, description } = req.body;
     try {
-        const stmt = db.prepare(`
-            INSERT INTO form_updates (title, url, category, department, last_date, is_trending, description) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `);
-        stmt.run(title, url, category, department || null, last_date || null, is_trending === 'on' ? 1 : 0, description || null);
-        res.redirect('/admin');
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error adding form update');
-    }
-});
+        const [students] = await db.query(`
+            SELECT r.*, e.name as exam_name, e.marks_per_question, e.negative_marks
+            FROM user_results r
+            JOIN exams e ON r.exam_id = e.id
+            WHERE r.id = ?
+        `, [studentId]);
 
-router.post('/delete-form', (req, res) => {
-    const { id } = req.body;
-    try {
-        const stmt = db.prepare('DELETE FROM form_updates WHERE id = ?');
-        stmt.run(id);
-        res.redirect('/admin');
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error deleting form update');
+        const student = students[0];
+
+        if (!student) return res.redirect('/admin/dashboard');
+
+        let sections = null;
+        if (student.sections_data) {
+            try { sections = JSON.parse(student.sections_data); } catch (e) { }
+        }
+
+        res.render('admin_student_detail', {
+            title: `Student Detail - ${student.name}`,
+            student,
+            sections
+        });
+    } catch (err) {
+        console.error('Student Detail Error:', err);
+        res.status(500).send('Internal Server Error');
     }
 });
 
